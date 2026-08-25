@@ -37,7 +37,7 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                 new DiagnosticDeduplicator());
 
             compilationStartContext.RegisterSymbolAction(
-                symbolContext => AnalyzeNamedType(symbolContext, extractor),
+                symbolContext => AnalyzeNamedType(symbolContext, extractor, namedTypeRestrictionPolicyProvider),
                 SymbolKind.NamedType);
 
             compilationStartContext.RegisterSymbolAction(
@@ -62,12 +62,20 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         });
     }
 
-    private static void AnalyzeNamedType(SymbolAnalysisContext context, DirectRestrictionPolicyExtractor extractor)
+    private static void AnalyzeNamedType(
+        SymbolAnalysisContext context,
+        DirectRestrictionPolicyExtractor extractor,
+        NamedTypeRestrictionPolicyProvider namedTypeRestrictionPolicyProvider)
     {
         var namedType = (INamedTypeSymbol)context.Symbol;
 
         foreach (var typeParameter in namedType.TypeParameters)
             _ = extractor.Extract(typeParameter, context.ReportDiagnostic, context.CancellationToken);
+
+        namedTypeRestrictionPolicyProvider.ReportCyclicContractPropagation(
+            namedType,
+            context.ReportDiagnostic,
+            context.CancellationToken);
     }
 
     private static void AnalyzeMethod(SymbolAnalysisContext context, DirectRestrictionPolicyExtractor extractor)

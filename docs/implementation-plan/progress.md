@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 10 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 11.
+- Phase: Task 11 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 12.
 
 ## Validation performed
 
@@ -44,6 +44,9 @@
 - Task 10: Ran `dotnet test IvTem.TypeSafety.slnx --filter SignaturePropagation`; 9 signature-propagation tests passed.
 - Task 10: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 90 tests.
 - Task 10: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 11: Ran `dotnet test IvTem.TypeSafety.slnx --filter Cycles`; 7 cycle-detection tests passed.
+- Task 11: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 97 tests.
+- Task 11: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -93,6 +96,11 @@
 - Task 10: Added signature scanning for fields, properties, events, method return types, method parameters, method generic constraints, and named type generic constraints.
 - Task 10: Added recursive traversal through signature containers so nested signatures such as `Action<Data<T>>` propagate while transformed restricted arguments such as `Data<List<T>>`, `Data<T[]>`, `Data<(T, string)>`, and `Data<Wrapper<T>>` remain unsupported.
 - Task 10: Added signature-propagation tests covering field, property, method return and parameter, event, private static member, generic constraint, method-body local exclusion, transformed argument exclusion, and nested containing-type behavior.
+- Task 11: Added graph-based cycle detection for named-type generic-signature propagation nodes keyed by original type definition plus type-parameter ordinal.
+- Task 11: Added deterministic strongly connected component analysis and one `IVTS003` report per cycle component.
+- Task 11: Added deterministic cycle diagnostic locations using ordered source type-parameter declarations.
+- Task 11: Suppressed propagated use-site diagnostics for cyclic source graph nodes while preserving direct policy extraction.
+- Task 11: Added cycle-detection tests covering two-type cycles, longer cycles, duplicate paths, nongeneric recursion exclusion, stack-safety, acyclic deep propagation, and suppression of cyclic-propagation use-site cascades.
 
 ## Decisions made during planning
 
@@ -173,6 +181,14 @@
 - Recursed through generic signature containers only to find candidate constructed restricted types; propagation edges are still created only when a restricted generic argument is exactly an in-scope type parameter of the type being analyzed.
 - Treated nested containing type parameters as out of scope for the nested type's own propagated contract in v1; only generic parameters declared by the analyzed named type can receive signature-derived policies.
 - Left method-body locals and transformed generic arguments out of propagation.
+
+## Decisions made during Task 11
+
+- Modeled cycle detection as a graph separate from policy extraction, with nodes `(original generic type definition, type-parameter ordinal)` and edges only for direct generic-parameter mappings already supported by propagation.
+- Used strongly connected component detection rather than fixed-point reasoning; v1 reports cyclic components as `IVTS003`.
+- Reported each component once per compilation using a deterministic key built from ordered node display strings.
+- Chose the diagnostic location from the earliest deterministic source type-parameter declaration in the component, falling back to `Location.None` only for metadata-only participants.
+- Suppressed only propagated policies from cyclic source nodes, rather than suppressing an entire generic type, so unrelated noncyclic ordinals and direct restrictions can still participate.
 
 ## Unresolved issues
 
