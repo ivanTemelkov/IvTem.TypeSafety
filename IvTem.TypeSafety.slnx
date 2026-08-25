@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IvTem.TypeSafety/IvTem.TypeSafety.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IvTem.TypeSafety.Tests/IvTem.TypeSafety.Tests.csproj" />
+  </Folder>
+</Solution>
