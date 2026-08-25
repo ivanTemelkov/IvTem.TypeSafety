@@ -13,10 +13,6 @@ namespace IvTem.TypeSafety.Analysis;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly SymbolDisplayFormat TypeDisplayFormat = SymbolDisplayFormat.FullyQualifiedFormat
-        .WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted)
-        .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
-
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => TypeSafetyDiagnosticDescriptors.All;
 
@@ -30,6 +26,11 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             var extractor = new DirectRestrictionPolicyExtractor();
             var exactTypeMatcher = new ExactTypeMatcher(compilationStartContext.Compilation);
             var assignableTypeMatcher = new AssignableTypeMatcher(compilationStartContext.Compilation);
+            var constructedTypeUseValidator = new ConstructedTypeUseValidator(
+                extractor,
+                exactTypeMatcher,
+                assignableTypeMatcher,
+                new DiagnosticDeduplicator());
 
             compilationStartContext.RegisterSymbolAction(
                 symbolContext => AnalyzeNamedType(symbolContext, extractor),
@@ -40,11 +41,17 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                 SymbolKind.Method);
 
             compilationStartContext.RegisterSyntaxNodeAction(
-                syntaxContext => AnalyzeGenericName(syntaxContext, extractor, exactTypeMatcher, assignableTypeMatcher),
+                syntaxContext => AnalyzeGenericName(syntaxContext, constructedTypeUseValidator),
                 SyntaxKind.GenericName);
 
             compilationStartContext.RegisterOperationAction(
-                operationContext => AnalyzeMethodUse(operationContext, extractor, exactTypeMatcher, assignableTypeMatcher),
+                operationContext => AnalyzeConstructedTypeOperation(operationContext, constructedTypeUseValidator),
+                OperationKind.ObjectCreation,
+                OperationKind.TypeOf,
+                OperationKind.CollectionExpression);
+
+            compilationStartContext.RegisterOperationAction(
+                operationContext => AnalyzeMethodUse(operationContext, constructedTypeUseValidator),
                 OperationKind.Invocation,
                 OperationKind.DelegateCreation,
                 OperationKind.Conversion);
@@ -71,52 +78,27 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeGenericName(
         SyntaxNodeAnalysisContext context,
-        DirectRestrictionPolicyExtractor extractor,
-        ExactTypeMatcher exactTypeMatcher,
-        AssignableTypeMatcher assignableTypeMatcher)
+        ConstructedTypeUseValidator constructedTypeUseValidator)
     {
         var genericName = (GenericNameSyntax)context.Node;
+        if (IsAliasDeclaration(genericName))
+            return;
+
         var type = context.SemanticModel.GetTypeInfo(genericName, context.CancellationToken).Type;
         if (type is not INamedTypeSymbol namedType)
             return;
 
-        if (namedType.IsUnboundGenericType)
-            return;
-
-        var typeArguments = namedType.TypeArguments;
-        var typeParameters = namedType.OriginalDefinition.TypeParameters;
-        if (typeArguments.Length != typeParameters.Length)
-            return;
-
-        for (var index = 0; index < typeArguments.Length; index++)
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-
-            var actualType = typeArguments[index];
-            if (ContainsErrorType(actualType))
-                continue;
-
-            var policy = extractor.Extract(typeParameters[index], static _ => { }, context.CancellationToken);
-            var matchedRestrictions = GetMatchedRestrictions(actualType, policy, exactTypeMatcher, assignableTypeMatcher);
-            if (matchedRestrictions.Length == 0)
-                continue;
-
-            var location = genericName.TypeArgumentList.Arguments[index].GetLocation();
-            context.ReportDiagnostic(Diagnostic.Create(
-                TypeSafetyDiagnosticDescriptors.ForbiddenGenericArgument,
-                location,
-                actualType.ToDisplayString(TypeDisplayFormat),
-                policy.TypeParameter.Name,
-                namedType.OriginalDefinition.ToDisplayString(TypeDisplayFormat),
-                FormatMatchedRestrictions(matchedRestrictions)));
-        }
+        constructedTypeUseValidator.Validate(
+            namedType,
+            GetTypeArgumentLocations(genericName),
+            genericName.GetLocation(),
+            context.ReportDiagnostic,
+            context.CancellationToken);
     }
 
     private static void AnalyzeMethodUse(
         OperationAnalysisContext context,
-        DirectRestrictionPolicyExtractor extractor,
-        ExactTypeMatcher exactTypeMatcher,
-        AssignableTypeMatcher assignableTypeMatcher)
+        ConstructedTypeUseValidator constructedTypeUseValidator)
     {
         if (context.Operation is IConversionOperation && HasAncestorOperation<IConversionOperation>(context.Operation.Parent))
             return;
@@ -131,46 +113,29 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         if (method.IsGenericMethod == false)
             return;
 
-        var typeArguments = method.TypeArguments;
-        var typeParameters = method.OriginalDefinition.TypeParameters;
-        if (typeArguments.Length != typeParameters.Length)
-            return;
-
-        for (var index = 0; index < typeArguments.Length; index++)
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-
-            var actualType = typeArguments[index];
-            if (ContainsErrorType(actualType))
-                continue;
-
-            var policy = extractor.Extract(typeParameters[index], static _ => { }, context.CancellationToken);
-            var matchedRestrictions = GetMatchedRestrictions(actualType, policy, exactTypeMatcher, assignableTypeMatcher);
-            if (matchedRestrictions.Length == 0)
-                continue;
-
-            context.ReportDiagnostic(Diagnostic.Create(
-                TypeSafetyDiagnosticDescriptors.ForbiddenGenericArgument,
-                GetMethodTypeArgumentLocation(context.Operation.Syntax, index),
-                actualType.ToDisplayString(TypeDisplayFormat),
-                policy.TypeParameter.Name,
-                method.OriginalDefinition.ToDisplayString(TypeDisplayFormat),
-                FormatMatchedRestrictions(matchedRestrictions)));
-        }
+        constructedTypeUseValidator.Validate(
+            method,
+            GetMethodTypeArgumentLocations(context.Operation.Syntax),
+            context.Operation.Syntax.GetLocation(),
+            context.ReportDiagnostic,
+            context.CancellationToken);
     }
 
-    private static ImmutableArray<string> GetMatchedRestrictions(
-        ITypeSymbol actualType,
-        RestrictionPolicy policy,
-        ExactTypeMatcher exactTypeMatcher,
-        AssignableTypeMatcher assignableTypeMatcher)
-        => policy.DisallowAssignable
-            .Where(forbiddenType => assignableTypeMatcher.Matches(actualType, forbiddenType.Type))
-            .Select(forbiddenType => FormatRestriction("DisallowTypes", forbiddenType))
-            .Concat(policy.DisallowExact
-                .Where(forbiddenType => exactTypeMatcher.Matches(actualType, forbiddenType.Type))
-                .Select(forbiddenType => FormatRestriction("DisallowExactTypes", forbiddenType)))
-            .ToImmutableArray();
+    private static void AnalyzeConstructedTypeOperation(
+        OperationAnalysisContext context,
+        ConstructedTypeUseValidator constructedTypeUseValidator)
+    {
+        var type = GetConstructedOperationType(context.Operation);
+        if (type is null)
+            return;
+
+        constructedTypeUseValidator.Validate(
+            type,
+            GetTypeArgumentLocations(context.Operation.Syntax),
+            context.Operation.Syntax.GetLocation(),
+            context.ReportDiagnostic,
+            context.CancellationToken);
+    }
 
     private static IMethodSymbol? GetConstructedMethod(IOperation operation)
         => operation switch
@@ -182,13 +147,22 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             _ => null
         };
 
-    private static Location GetMethodTypeArgumentLocation(SyntaxNode syntax, int typeArgumentIndex)
+    private static INamedTypeSymbol? GetConstructedOperationType(IOperation operation)
+        => operation switch
+        {
+            IObjectCreationOperation objectCreation => objectCreation.Type as INamedTypeSymbol,
+            ITypeOfOperation typeOf => typeOf.TypeOperand as INamedTypeSymbol,
+            ICollectionExpressionOperation collectionExpression => collectionExpression.Type as INamedTypeSymbol,
+            _ => null
+        };
+
+    private static ImmutableArray<Location> GetMethodTypeArgumentLocations(SyntaxNode syntax)
     {
         var genericName = GetMethodGenericName(syntax);
-        if (genericName is not null && genericName.TypeArgumentList.Arguments.Count > typeArgumentIndex)
-            return genericName.TypeArgumentList.Arguments[typeArgumentIndex].GetLocation();
+        if (genericName is not null)
+            return GetTypeArgumentLocations(genericName);
 
-        return syntax.GetLocation();
+        return ImmutableArray<Location>.Empty;
     }
 
     private static GenericNameSyntax? GetMethodGenericName(SyntaxNode syntax)
@@ -201,6 +175,29 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             _ => null
         };
 
+    private static ImmutableArray<Location> GetTypeArgumentLocations(SyntaxNode syntax)
+    {
+        var genericName = syntax switch
+        {
+            GenericNameSyntax directGenericName => directGenericName,
+            ObjectCreationExpressionSyntax objectCreation => objectCreation.Type as GenericNameSyntax,
+            TypeOfExpressionSyntax typeOf => typeOf.Type as GenericNameSyntax,
+            _ => null
+        };
+
+        if (genericName is null)
+            return ImmutableArray<Location>.Empty;
+
+        return genericName.TypeArgumentList.Arguments
+            .Select(argument => argument.GetLocation())
+            .ToImmutableArray();
+    }
+
+    private static bool IsAliasDeclaration(GenericNameSyntax genericName)
+        => genericName.Ancestors()
+            .OfType<UsingDirectiveSyntax>()
+            .Any(usingDirective => usingDirective.Alias is not null);
+
     private static bool HasAncestorOperation<TOperation>(IOperation? operation)
         where TOperation : IOperation
     {
@@ -212,20 +209,4 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
 
         return false;
     }
-
-    private static bool ContainsErrorType(ITypeSymbol type)
-        => type switch
-        {
-            IErrorTypeSymbol => true,
-            INamedTypeSymbol namedType => namedType.TypeArguments.Any(ContainsErrorType),
-            IArrayTypeSymbol arrayType => ContainsErrorType(arrayType.ElementType),
-            IPointerTypeSymbol pointerType => ContainsErrorType(pointerType.PointedAtType),
-            _ => false
-        };
-
-    private static string FormatRestriction(string attributeName, ForbiddenType forbiddenType)
-        => attributeName + "(" + forbiddenType.DisplayName + ")";
-
-    private static string FormatMatchedRestrictions(ImmutableArray<string> matchedRestrictions)
-        => string.Join(", ", matchedRestrictions);
 }

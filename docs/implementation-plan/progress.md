@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 6 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 7.
+- Phase: Task 7 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 8.
 
 ## Validation performed
 
@@ -31,6 +31,9 @@
 - Task 6: Ran `dotnet test IvTem.TypeSafety.slnx --filter GenericMethodUseSiteTests`; 9 generic-method use-site tests passed.
 - Task 6: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 52 tests.
 - Task 6: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 7: Ran `dotnet test IvTem.TypeSafety.slnx --filter BroadConstructedTypeUseSiteTests`; 12 broad constructed-type use-site tests passed.
+- Task 7: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 64 tests.
+- Task 7: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -64,6 +67,12 @@
 - Task 6: Added constructed `IMethodSymbol` validation after type inference, mapping method type parameters to type arguments by ordinal and reusing the existing direct-policy matchers.
 - Task 6: Added fallback method-use diagnostic locations for inferred arguments and explicit type-argument locations when method generic syntax is available.
 - Task 6: Added generic method tests covering explicit violations, inferred violations and allowances, method groups, generic local functions, diagnostic aggregation, explicit argument location, inferred-type message content, and delegate-conversion de-duplication.
+- Task 7: Added reusable constructed generic type validation for `INamedTypeSymbol` use sites, sharing exact and assignable policy matching.
+- Task 7: Added source-span plus generic-argument ordinal diagnostic de-duplication across syntax and operation callbacks.
+- Task 7: Added operation coverage for object creation, `typeof`, and collection expressions, including target-typed locations where explicit type-argument syntax is unavailable.
+- Task 7: Preserved generic method use-site enforcement through the shared validator so Task 6 behavior continues to use the same matching and de-duplication path.
+- Task 7: Suppressed alias declarations and unresolved/error constructed type arguments for the broad use-site pass.
+- Task 7: Added broad use-site tests covering fields, properties, parameters, return types, `typeof`, object creation, target-typed `new`, base/interface declarations, casts, `is`, `as`, `default(...)`, attribute `typeof(...)`, constraints, tuple element types, collection expressions, aliases, broken code, and syntax/operation de-duplication.
 
 ## Decisions made during planning
 
@@ -112,6 +121,14 @@
 - Suppressed conversion analysis when it is nested under another conversion or delegate creation operation to avoid duplicate method-group diagnostics.
 - Kept generic lambda support deferred; Task 6 covers named generic methods and generic local functions exposed as `IMethodSymbol`.
 - Reused `IVTS001` for method type-argument violations because the existing descriptor already includes the offending actual type and generic parameter.
+
+## Decisions made during Task 7
+
+- Kept broad constructed-type detection mostly syntax-driven for explicit generic type syntax because Roslyn binds those locations reliably across declarations, patterns, casts, constraints, tuple elements, `default(...)`, and attribute arguments.
+- Added operation analysis only where it materially extends or overlaps explicit syntax coverage: object creation, `typeof`, and collection expressions.
+- Used the explicit type-argument location whenever available; operation-only target-typed use sites fall back to the expression location such as `new()` or `[]`.
+- Suppressed using-alias declarations for v1 because alias-specific enforcement remains unsupported and alias uses do not expose the constructed generic syntax directly.
+- Allowed distinct diagnostics for distinct semantic use sites in the same statement, such as an invalid return type plus a target-typed `new()` expression; de-duplication only suppresses overlapping callbacks for the same source span and generic argument ordinal.
 
 ## Unresolved issues
 
