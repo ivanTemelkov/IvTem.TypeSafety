@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 9 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 10.
+- Phase: Task 10 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 11.
 
 ## Validation performed
 
@@ -41,6 +41,9 @@
 - Task 9: Ran `dotnet test IvTem.TypeSafety.slnx --filter TypePropagation`; 10 type-propagation tests passed.
 - Task 9: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 81 tests.
 - Task 9: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 10: Ran `dotnet test IvTem.TypeSafety.slnx --filter SignaturePropagation`; 9 signature-propagation tests passed.
+- Task 10: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 90 tests.
+- Task 10: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -86,6 +89,10 @@
 - Task 9: Added `NamedTypeRestrictionPolicyProvider` to collect generic named-type contracts from direct declarations plus generic base class and interface mappings.
 - Task 9: Updated named generic type use-site validation to enforce unioned direct and inherited type-parameter policies while preserving the existing member-policy path for generic methods.
 - Task 9: Added type-propagation tests covering generic interfaces, generic base classes, multiple inherited contracts, transitive inheritance, partial declaration contract merging, reordered mappings, repeated mappings, immediate concrete base/interface declaration violations, and diamond-path diagnostic de-duplication.
+- Task 10: Extended `NamedTypeRestrictionPolicyProvider` to scan named type declaration signatures for direct generic-parameter mappings.
+- Task 10: Added signature scanning for fields, properties, events, method return types, method parameters, method generic constraints, and named type generic constraints.
+- Task 10: Added recursive traversal through signature containers so nested signatures such as `Action<Data<T>>` propagate while transformed restricted arguments such as `Data<List<T>>`, `Data<T[]>`, `Data<(T, string)>`, and `Data<Wrapper<T>>` remain unsupported.
+- Task 10: Added signature-propagation tests covering field, property, method return and parameter, event, private static member, generic constraint, method-body local exclusion, transformed argument exclusion, and nested containing-type behavior.
 
 ## Decisions made during planning
 
@@ -159,10 +166,17 @@
 - Deduplicated inherited forbidden types per policy kind by semantic type identity so diamond paths and repeated mappings preserve one diagnostic per offending generic argument.
 - Kept immediate concrete forbidden base/interface declaration diagnostics in the existing constructed-type use-site path rather than adding a separate declaration analyzer.
 
+## Decisions made during Task 10
+
+- Reused `NamedTypeRestrictionPolicyProvider` for signature propagation so direct, inherited, and signature-derived named-type contracts are unioned before use-site validation.
+- Scanned declarations semantically from symbols instead of syntax so private/public and static/instance members participate consistently across fields, properties, events, methods, and constraints.
+- Recursed through generic signature containers only to find candidate constructed restricted types; propagation edges are still created only when a restricted generic argument is exactly an in-scope type parameter of the type being analyzed.
+- Treated nested containing type parameters as out of scope for the nested type's own propagated contract in v1; only generic parameters declared by the analyzed named type can receive signature-derived policies.
+- Left method-body locals and transformed generic arguments out of propagation.
+
 ## Unresolved issues
 
 - Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
-- Whether nested generic type propagation should cross containing type parameters in v1.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
 - NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
 - Source Link and package contents have not been validated beyond build/restore; Task 13 must inspect the produced `.nupkg`.

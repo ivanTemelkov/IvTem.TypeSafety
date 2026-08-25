@@ -70,6 +70,9 @@ internal sealed class NamedTypeRestrictionPolicyProvider
         foreach (var sourceType in GetBaseAndInterfaceTypes(typeDefinition, cancellationToken))
             AddMappedPolicies(sourceType, builders, recursionGuard, cancellationToken);
 
+        foreach (var sourceType in GetSignatureTypes(typeDefinition, cancellationToken))
+            AddMappedPolicies(sourceType, builders, recursionGuard, cancellationToken);
+
         return builders
             .Select(builder => builder.ToPolicy())
             .ToImmutableArray();
@@ -124,6 +127,113 @@ internal sealed class NamedTypeRestrictionPolicyProvider
                 yield return interfaceType;
         }
     }
+
+    private static IEnumerable<INamedTypeSymbol> GetSignatureTypes(
+        INamedTypeSymbol typeDefinition,
+        CancellationToken cancellationToken)
+    {
+        foreach (var typeParameter in typeDefinition.TypeParameters)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            foreach (var constraintType in typeParameter.ConstraintTypes)
+                foreach (var signatureType in FlattenSignatureType(constraintType, cancellationToken))
+                    yield return signatureType;
+        }
+
+        foreach (var member in typeDefinition.GetMembers())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            foreach (var signatureType in GetMemberSignatureTypes(member, cancellationToken))
+                yield return signatureType;
+        }
+    }
+
+    private static IEnumerable<INamedTypeSymbol> GetMemberSignatureTypes(
+        ISymbol member,
+        CancellationToken cancellationToken)
+    {
+        switch (member)
+        {
+            case IFieldSymbol field:
+                foreach (var signatureType in FlattenSignatureType(field.Type, cancellationToken))
+                    yield return signatureType;
+
+                break;
+
+            case IPropertySymbol property:
+                foreach (var signatureType in FlattenSignatureType(property.Type, cancellationToken))
+                    yield return signatureType;
+
+                foreach (var parameter in property.Parameters)
+                    foreach (var signatureType in FlattenSignatureType(parameter.Type, cancellationToken))
+                        yield return signatureType;
+
+                break;
+
+            case IEventSymbol eventSymbol:
+                foreach (var signatureType in FlattenSignatureType(eventSymbol.Type, cancellationToken))
+                    yield return signatureType;
+
+                break;
+
+            case IMethodSymbol method:
+                if (IsSignatureMethod(method) == false)
+                    break;
+
+                foreach (var signatureType in FlattenSignatureType(method.ReturnType, cancellationToken))
+                    yield return signatureType;
+
+                foreach (var parameter in method.Parameters)
+                    foreach (var signatureType in FlattenSignatureType(parameter.Type, cancellationToken))
+                        yield return signatureType;
+
+                foreach (var typeParameter in method.TypeParameters)
+                    foreach (var constraintType in typeParameter.ConstraintTypes)
+                        foreach (var signatureType in FlattenSignatureType(constraintType, cancellationToken))
+                            yield return signatureType;
+
+                break;
+        }
+    }
+
+    private static IEnumerable<INamedTypeSymbol> FlattenSignatureType(ITypeSymbol type, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        switch (type)
+        {
+            case INamedTypeSymbol namedType:
+                if (namedType.IsGenericType)
+                    yield return namedType;
+
+                foreach (var typeArgument in namedType.TypeArguments)
+                    foreach (var signatureType in FlattenSignatureType(typeArgument, cancellationToken))
+                        yield return signatureType;
+
+                break;
+
+            case IArrayTypeSymbol arrayType:
+                foreach (var signatureType in FlattenSignatureType(arrayType.ElementType, cancellationToken))
+                    yield return signatureType;
+
+                break;
+
+            case IPointerTypeSymbol pointerType:
+                foreach (var signatureType in FlattenSignatureType(pointerType.PointedAtType, cancellationToken))
+                    yield return signatureType;
+
+                break;
+        }
+    }
+
+    private static bool IsSignatureMethod(IMethodSymbol method)
+        => method.MethodKind is not MethodKind.PropertyGet
+            and not MethodKind.PropertySet
+            and not MethodKind.EventAdd
+            and not MethodKind.EventRemove
+            and not MethodKind.EventRaise;
 
     private static RestrictionPolicyBuilder[] CreatePolicyBuilders(ImmutableArray<ITypeParameterSymbol> typeParameters)
     {
