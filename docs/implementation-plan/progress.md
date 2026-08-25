@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 3 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 4.
+- Phase: Task 4 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 5.
 
 ## Validation performed
 
@@ -22,6 +22,9 @@
 - Task 2: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 - Task 3: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded after replacing positional records with `netstandard2.0`-portable immutable classes and correcting Roslyn metadata checks.
 - Task 3: Ran `dotnet test IvTem.TypeSafety.slnx --filter DirectRestrictionPolicyExtractionTests`; 14 analyzer/policy extraction tests passed.
+- Task 4: Ran `dotnet test IvTem.TypeSafety.slnx --filter ExactMatching`; 7 exact-matching tests passed.
+- Task 4: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed.
+- Task 4: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -45,6 +48,9 @@
 - Task 3: Added malformed lookalike metadata diagnostics for current-source attributes that use the owned metadata names but fail the v1 shape contract.
 - Task 3: Added analyzer test infrastructure that runs the embedded attribute generator before analyzer diagnostics.
 - Task 3: Added focused policy/configuration tests covering valid direct extraction, exact extraction, multiple attributes, multiple constructor arguments, duplicate de-duplication, invalid configuration cases, malformed metadata, and `DisallowExactTypes(typeof(object))`.
+- Task 4: Added exact type matching with `dynamic` normalized to `System.Object`, nullable reference annotations erased via semantic comparison, and nullable value types preserved as distinct constructed types.
+- Task 4: Added explicit generic type syntax analysis for direct constructed type uses and `IVTS001` reporting at offending type argument locations.
+- Task 4: Added exact matching tests for exact class rejection, derived class allowance, nullable reference annotations, `dynamic`, nullable value types, generic parameter constraints, and alias/framework type-name semantic identity.
 
 ## Decisions made during planning
 
@@ -71,6 +77,13 @@
 - Required the v1 attribute constructor shape to be one `params System.Type[]` parameter.
 - Used `SymbolEqualityComparer.Default` for semantic duplicate removal per restriction kind, preserving first declaration order with display name as a deterministic tie breaker.
 - Used immutable sealed classes instead of positional records in production policy models because the analyzer assembly targets `netstandard2.0`.
+
+## Decisions made during Task 4
+
+- Limited use-site enforcement to explicit constructed generic type syntax so generic method inference and broader semantic locations remain staged for Tasks 06 and 07.
+- Reused direct policy extraction for use-site matching but suppressed configuration diagnostics in the use-site pass to avoid duplicate `IVTS002`/`IVTS005` reports; declaration analysis remains responsible for configuration diagnostics.
+- Used `SymbolEqualityComparer.Default` after `dynamic` normalization for exact matching, which erases nullable reference annotations while keeping `Nullable<T>` distinct from `T`.
+- Skipped unresolved/error type symbols in use-site matching to avoid analyzer noise on incomplete or uncompilable code.
 
 ## Unresolved issues
 
