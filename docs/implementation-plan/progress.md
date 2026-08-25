@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 4 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 5.
+- Phase: Task 5 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 6.
 
 ## Validation performed
 
@@ -25,6 +25,9 @@
 - Task 4: Ran `dotnet test IvTem.TypeSafety.slnx --filter ExactMatching`; 7 exact-matching tests passed.
 - Task 4: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed.
 - Task 4: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 5: Ran `dotnet test IvTem.TypeSafety.slnx --filter AssignableMatching`; 16 assignable-matching tests passed.
+- Task 5: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 43 tests.
+- Task 5: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -51,6 +54,9 @@
 - Task 4: Added exact type matching with `dynamic` normalized to `System.Object`, nullable reference annotations erased via semantic comparison, and nullable value types preserved as distinct constructed types.
 - Task 4: Added explicit generic type syntax analysis for direct constructed type uses and `IVTS001` reporting at offending type argument locations.
 - Task 4: Added exact matching tests for exact class rejection, derived class allowance, nullable reference annotations, `dynamic`, nullable value types, generic parameter constraints, and alias/framework type-name semantic identity.
+- Task 5: Added assignable type matching for `DisallowTypesAttribute` using filtered implicit identity/reference/boxing conversions plus an explicit implemented-interface fallback for ref-like type interface relationships.
+- Task 5: Extended constructed generic type syntax enforcement to aggregate `DisallowTypes` and `DisallowExactTypes` matches into one `IVTS001` per offending generic argument.
+- Task 5: Added assignable matching tests for same type, derived class, interface implementation, generic variance, array covariance, value-type boxing, value-type interface boxing, ref-like interface implementation, user-defined conversion rejection, numeric conversion rejection, nested type argument non-propagation, direct generic constraints, deferred constraint chains, and diagnostic aggregation.
 
 ## Decisions made during planning
 
@@ -84,6 +90,13 @@
 - Reused direct policy extraction for use-site matching but suppressed configuration diagnostics in the use-site pass to avoid duplicate `IVTS002`/`IVTS005` reports; declaration analysis remains responsible for configuration diagnostics.
 - Used `SymbolEqualityComparer.Default` after `dynamic` normalization for exact matching, which erases nullable reference annotations while keeping `Nullable<T>` distinct from `T`.
 - Skipped unresolved/error type symbols in use-site matching to avoid analyzer noise on incomplete or uncompilable code.
+
+## Decisions made during Task 5
+
+- Used `Compilation.ClassifyConversion(actual, forbidden)` only when the conversion is implicit identity, implicit reference, or implicit boxing, so numeric, nullable, dynamic, and user-defined conversions are not treated as assignability.
+- Added explicit interface walking for implemented interfaces because ref-like types that implement interfaces are not covered by the filtered reference/boxing conversion path.
+- Kept generic type parameter reasoning limited to direct non-type-parameter class/interface constraints; chained constraints such as `where T : U where U : Exception` remain intentionally deferred.
+- Preserved Task 4's explicit constructed generic type syntax boundary; assignable matching does not add method inference, broad use-site coverage, or nested type-argument propagation.
 
 ## Unresolved issues
 

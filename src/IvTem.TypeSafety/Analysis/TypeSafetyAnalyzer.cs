@@ -28,6 +28,7 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         {
             var extractor = new DirectRestrictionPolicyExtractor();
             var exactTypeMatcher = new ExactTypeMatcher(compilationStartContext.Compilation);
+            var assignableTypeMatcher = new AssignableTypeMatcher(compilationStartContext.Compilation);
 
             compilationStartContext.RegisterSymbolAction(
                 symbolContext => AnalyzeNamedType(symbolContext, extractor),
@@ -38,7 +39,7 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                 SymbolKind.Method);
 
             compilationStartContext.RegisterSyntaxNodeAction(
-                syntaxContext => AnalyzeGenericName(syntaxContext, extractor, exactTypeMatcher),
+                syntaxContext => AnalyzeGenericName(syntaxContext, extractor, exactTypeMatcher, assignableTypeMatcher),
                 SyntaxKind.GenericName);
         });
     }
@@ -64,7 +65,8 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeGenericName(
         SyntaxNodeAnalysisContext context,
         DirectRestrictionPolicyExtractor extractor,
-        ExactTypeMatcher exactTypeMatcher)
+        ExactTypeMatcher exactTypeMatcher,
+        AssignableTypeMatcher assignableTypeMatcher)
     {
         var genericName = (GenericNameSyntax)context.Node;
         var type = context.SemanticModel.GetTypeInfo(genericName, context.CancellationToken).Type;
@@ -88,8 +90,12 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
                 continue;
 
             var policy = extractor.Extract(typeParameters[index], static _ => { }, context.CancellationToken);
-            var matchedRestrictions = policy.DisallowExact
-                .Where(forbiddenType => exactTypeMatcher.Matches(actualType, forbiddenType.Type))
+            var matchedRestrictions = policy.DisallowAssignable
+                .Where(forbiddenType => assignableTypeMatcher.Matches(actualType, forbiddenType.Type))
+                .Select(forbiddenType => FormatRestriction("DisallowTypes", forbiddenType))
+                .Concat(policy.DisallowExact
+                    .Where(forbiddenType => exactTypeMatcher.Matches(actualType, forbiddenType.Type))
+                    .Select(forbiddenType => FormatRestriction("DisallowExactTypes", forbiddenType)))
                 .ToImmutableArray();
 
             if (matchedRestrictions.Length == 0)
@@ -116,8 +122,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             _ => false
         };
 
-    private static string FormatMatchedRestrictions(ImmutableArray<ForbiddenType> matchedRestrictions)
-        => string.Join(
-            ", ",
-            matchedRestrictions.Select(forbiddenType => "DisallowExactTypes(" + forbiddenType.DisplayName + ")"));
+    private static string FormatRestriction(string attributeName, ForbiddenType forbiddenType)
+        => attributeName + "(" + forbiddenType.DisplayName + ")";
+
+    private static string FormatMatchedRestrictions(ImmutableArray<string> matchedRestrictions)
+        => string.Join(", ", matchedRestrictions);
 }
