@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 5 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 6.
+- Phase: Task 6 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 7.
 
 ## Validation performed
 
@@ -28,6 +28,9 @@
 - Task 5: Ran `dotnet test IvTem.TypeSafety.slnx --filter AssignableMatching`; 16 assignable-matching tests passed.
 - Task 5: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 43 tests.
 - Task 5: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 6: Ran `dotnet test IvTem.TypeSafety.slnx --filter GenericMethodUseSiteTests`; 9 generic-method use-site tests passed.
+- Task 6: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 52 tests.
+- Task 6: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -57,6 +60,10 @@
 - Task 5: Added assignable type matching for `DisallowTypesAttribute` using filtered implicit identity/reference/boxing conversions plus an explicit implemented-interface fallback for ref-like type interface relationships.
 - Task 5: Extended constructed generic type syntax enforcement to aggregate `DisallowTypes` and `DisallowExactTypes` matches into one `IVTS001` per offending generic argument.
 - Task 5: Added assignable matching tests for same type, derived class, interface implementation, generic variance, array covariance, value-type boxing, value-type interface boxing, ref-like interface implementation, user-defined conversion rejection, numeric conversion rejection, nested type argument non-propagation, direct generic constraints, deferred constraint chains, and diagnostic aggregation.
+- Task 6: Added operation analysis for generic method invocations, delegate creation, and delegate-conversion method groups.
+- Task 6: Added constructed `IMethodSymbol` validation after type inference, mapping method type parameters to type arguments by ordinal and reusing the existing direct-policy matchers.
+- Task 6: Added fallback method-use diagnostic locations for inferred arguments and explicit type-argument locations when method generic syntax is available.
+- Task 6: Added generic method tests covering explicit violations, inferred violations and allowances, method groups, generic local functions, diagnostic aggregation, explicit argument location, inferred-type message content, and delegate-conversion de-duplication.
 
 ## Decisions made during planning
 
@@ -97,6 +104,14 @@
 - Added explicit interface walking for implemented interfaces because ref-like types that implement interfaces are not covered by the filtered reference/boxing conversion path.
 - Kept generic type parameter reasoning limited to direct non-type-parameter class/interface constraints; chained constraints such as `where T : U where U : Exception` remain intentionally deferred.
 - Preserved Task 4's explicit constructed generic type syntax boundary; assignable matching does not add method inference, broad use-site coverage, or nested type-argument propagation.
+
+## Decisions made during Task 6
+
+- Used Roslyn operation analysis for method use sites because it exposes constructed generic method symbols after type inference.
+- Registered invocation, delegate creation, and conversion operations, then normalized each relevant operation to one constructed `IMethodSymbol`.
+- Suppressed conversion analysis when it is nested under another conversion or delegate creation operation to avoid duplicate method-group diagnostics.
+- Kept generic lambda support deferred; Task 6 covers named generic methods and generic local functions exposed as `IMethodSymbol`.
+- Reused `IVTS001` for method type-argument violations because the existing descriptor already includes the offending actual type and generic parameter.
 
 ## Unresolved issues
 
