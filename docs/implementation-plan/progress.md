@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 1 completed.
-- Implementation status: Repository scaffolding created; analyzer and source-generator behavior not started.
-- Stop condition: Wait for explicit instruction before Task 2.
+- Phase: Task 2 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 3.
 
 ## Validation performed
 
@@ -18,6 +18,8 @@
 - Task 1: Ran `dotnet restore IvTem.TypeSafety.slnx`; restore succeeded after removing an unavailable direct verifier package.
 - Task 1: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 - Task 1: Ran `git status --short`; scaffolding files are untracked, and pre-existing `docs/` content remains untracked.
+- Task 2: Ran `dotnet test IvTem.TypeSafety.slnx --filter TypeSafetyAttributeGeneratorTests`; 6 generator tests passed.
+- Task 2: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -31,6 +33,9 @@
 - Task 1: Created `src/IvTem.TypeSafety/IvTem.TypeSafety.csproj` targeting `netstandard2.0`.
 - Task 1: Created `tests/IvTem.TypeSafety.Tests/IvTem.TypeSafety.Tests.csproj` targeting `net10.0` with xUnit and Roslyn testing dependencies.
 - Task 1: Added placeholder analyzer release files, changelog, README, and source/test ownership folders.
+- Task 2: Added `TypeSafetyAttributeGenerator` as an incremental source generator.
+- Task 2: Added deterministic generated source for `IvTem.TypeSafety.DisallowTypesAttribute` and `IvTem.TypeSafety.DisallowExactTypesAttribute`.
+- Task 2: Added generator tests covering source emission, generic-parameter usage, internal accessibility, repeated usage, namespace and constructor shape, and absence of a consumer runtime reference to the analyzer assembly.
 
 ## Decisions made during planning
 
@@ -46,16 +51,16 @@
 - Kept implicit usings disabled solution-wide to favor explicit imports for analyzer/source-generator portability.
 - Configured initial analyzer packing shape with build output under `analyzers/dotnet/cs/` and no normal build output packing; package content validation remains deferred to Task 13.
 - Removed direct `Microsoft.CodeAnalysis.Testing.Verifiers.XUnit` usage because NuGet did not contain version `1.1.4`; the concrete verifier/harness choice is deferred until real tests are added.
+- Task 2 uses a direct `CSharpGeneratorDriver` test harness instead of Roslyn testing framework wrappers, because the direct harness is sufficient for the embedded-source behavior and avoids stale Roslyn testing package conflicts.
+- The test project references `IvTem.TypeSafety` as a normal private project reference so tests can instantiate the generator; consumer-reference behavior is proven inside the generated consumer compilation.
 
 ## Unresolved issues
 
 - Whether to include `IVTS005` for malformed lookalike metadata.
 - Whether nested generic type propagation should cross containing type parameters in v1.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
-- Exact Roslyn embedded attribute API behavior must be verified during implementation.
 - NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
 - Source Link and package contents have not been validated beyond build/restore; Task 13 must inspect the produced `.nupkg`.
-- Roslyn testing package APIs have not been exercised yet because Task 1 intentionally adds no analyzer/generator tests.
 
 ## Deferred features from specification
 
