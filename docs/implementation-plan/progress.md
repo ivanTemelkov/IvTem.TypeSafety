@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 7 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 8.
+- Phase: Task 8 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 9.
 
 ## Validation performed
 
@@ -34,6 +34,10 @@
 - Task 7: Ran `dotnet test IvTem.TypeSafety.slnx --filter BroadConstructedTypeUseSiteTests`; 12 broad constructed-type use-site tests passed.
 - Task 7: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 64 tests.
 - Task 7: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 8: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 8: Ran `dotnet test IvTem.TypeSafety.slnx --filter MemberPropagation`; 7 member-propagation tests passed.
+- Task 8: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 71 tests.
+- Task 8: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -73,6 +77,9 @@
 - Task 7: Preserved generic method use-site enforcement through the shared validator so Task 6 behavior continues to use the same matching and de-duplication path.
 - Task 7: Suppressed alias declarations and unresolved/error constructed type arguments for the broad use-site pass.
 - Task 7: Added broad use-site tests covering fields, properties, parameters, return types, `typeof`, object creation, target-typed `new`, base/interface declarations, casts, `is`, `as`, `default(...)`, attribute `typeof(...)`, constraints, tuple element types, collection expressions, aliases, broken code, and syntax/operation de-duplication.
+- Task 8: Added `MemberRestrictionPolicyProvider` to collect generic method contracts from direct declarations, partial method counterpart symbols, overridden methods, explicit interface implementations, and Roslyn-resolved implicit interface implementations.
+- Task 8: Updated generic method use-site validation to use unioned member policies while leaving named generic type policy extraction direct-only for Task 9.
+- Task 8: Added member propagation tests covering implicit interface implementation, overrides, explicit interface implementation, multiple interface contract unioning, ordinal mapping across multiple method type parameters, partial method declaration/implementation behavior, and duplicate inherited interface paths.
 
 ## Decisions made during planning
 
@@ -129,6 +136,14 @@
 - Used the explicit type-argument location whenever available; operation-only target-typed use sites fall back to the expression location such as `new()` or `[]`.
 - Suppressed using-alias declarations for v1 because alias-specific enforcement remains unsupported and alias uses do not expose the constructed generic syntax directly.
 - Allowed distinct diagnostics for distinct semantic use sites in the same statement, such as an invalid return type plus a target-typed `new()` expression; de-duplication only suppresses overlapping callbacks for the same source span and generic argument ordinal.
+
+## Decisions made during Task 8
+
+- Scoped propagation to generic methods because C# has generic methods but not generic properties/events/operators in the same use-site shape; generic type inheritance remains Task 9.
+- Used Roslyn's `FindImplementationForInterfaceMember` for implicit interface contracts and `ExplicitInterfaceImplementations` for explicit contracts instead of name/signature text matching.
+- Mapped inherited member type parameters to implementation type parameters by ordinal, matching C# override/interface generic arity rules.
+- Combined direct and inherited restrictions as a semantic union per restriction kind, preserving one `IVTS001` per offending method type argument.
+- Included partial method definition and implementation counterpart symbols as contract sources so attributes on either part are visible at use sites.
 
 ## Unresolved issues
 

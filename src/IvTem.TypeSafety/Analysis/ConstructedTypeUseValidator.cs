@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using IvTem.TypeSafety.Diagnostics;
 using IvTem.TypeSafety.Policies;
+using IvTem.TypeSafety.Propagation;
 using Microsoft.CodeAnalysis;
 
 namespace IvTem.TypeSafety.Analysis;
@@ -15,17 +16,20 @@ internal sealed class ConstructedTypeUseValidator
         .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
 
     private readonly DirectRestrictionPolicyExtractor extractor;
+    private readonly MemberRestrictionPolicyProvider memberRestrictionPolicyProvider;
     private readonly ExactTypeMatcher exactTypeMatcher;
     private readonly AssignableTypeMatcher assignableTypeMatcher;
     private readonly DiagnosticDeduplicator diagnosticDeduplicator;
 
     public ConstructedTypeUseValidator(
         DirectRestrictionPolicyExtractor extractor,
+        MemberRestrictionPolicyProvider memberRestrictionPolicyProvider,
         ExactTypeMatcher exactTypeMatcher,
         AssignableTypeMatcher assignableTypeMatcher,
         DiagnosticDeduplicator diagnosticDeduplicator)
     {
         this.extractor = extractor;
+        this.memberRestrictionPolicyProvider = memberRestrictionPolicyProvider;
         this.exactTypeMatcher = exactTypeMatcher;
         this.assignableTypeMatcher = assignableTypeMatcher;
         this.diagnosticDeduplicator = diagnosticDeduplicator;
@@ -67,13 +71,13 @@ internal sealed class ConstructedTypeUseValidator
             return;
 
         var typeArguments = method.TypeArguments;
-        var typeParameters = method.OriginalDefinition.TypeParameters;
-        if (typeArguments.Length != typeParameters.Length)
+        var policies = memberRestrictionPolicyProvider.GetMethodTypeParameterPolicies(method, cancellationToken);
+        if (typeArguments.Length != policies.Length)
             return;
 
         ValidateCore(
             typeArguments,
-            typeParameters,
+            policies,
             method.OriginalDefinition.ToDisplayString(TypeDisplayFormat),
             typeArgumentLocations,
             fallbackLocation,
@@ -99,6 +103,42 @@ internal sealed class ConstructedTypeUseValidator
                 continue;
 
             var policy = extractor.Extract(typeParameters[index], static _ => { }, cancellationToken);
+            var matchedRestrictions = GetMatchedRestrictions(actualType, policy);
+            if (matchedRestrictions.Length == 0)
+                continue;
+
+            var location = GetTypeArgumentLocation(typeArgumentLocations, fallbackLocation, index);
+            if (diagnosticDeduplicator.TryMarkReported(location, index) == false)
+                continue;
+
+            reportDiagnostic(Diagnostic.Create(
+                TypeSafetyDiagnosticDescriptors.ForbiddenGenericArgument,
+                location,
+                actualType.ToDisplayString(TypeDisplayFormat),
+                policy.TypeParameter.Name,
+                originalDefinitionDisplayName,
+                FormatMatchedRestrictions(matchedRestrictions)));
+        }
+    }
+
+    private void ValidateCore(
+        ImmutableArray<ITypeSymbol> typeArguments,
+        ImmutableArray<RestrictionPolicy> policies,
+        string originalDefinitionDisplayName,
+        ImmutableArray<Location> typeArgumentLocations,
+        Location fallbackLocation,
+        Action<Diagnostic> reportDiagnostic,
+        CancellationToken cancellationToken)
+    {
+        for (var index = 0; index < typeArguments.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var actualType = typeArguments[index];
+            if (ContainsErrorType(actualType))
+                continue;
+
+            var policy = policies[index];
             var matchedRestrictions = GetMatchedRestrictions(actualType, policy);
             if (matchedRestrictions.Length == 0)
                 continue;
