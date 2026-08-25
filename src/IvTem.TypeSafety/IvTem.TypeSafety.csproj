@@ -8,10 +8,14 @@
     <Description>Compile-time generic type-safety restrictions for C#.</Description>
     <Title>IvTem.TypeSafety</Title>
     <IsPackable>true</IsPackable>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <BuildOutputTargetFolder>analyzers/dotnet/cs</BuildOutputTargetFolder>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddAnalyzerPackageContent</TargetsForTfmSpecificContentInPackage>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-    <NoWarn>$(NoWarn);RS2008</NoWarn>
+    <NoWarn>$(NoWarn);RS2008;NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +24,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
+
+  <Target Name="AddAnalyzerPackageContent" DependsOnTargets="Build">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="analyzers/dotnet/cs/$(AssemblyName).dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveRuntimePackageBuildOutput" AfterTargets="_WalkEachTargetPerFramework">
+    <ItemGroup>
+      <_BuildOutputInPackage Remove="@(_BuildOutputInPackage)" />
+    </ItemGroup>
+  </Target>
 </Project>

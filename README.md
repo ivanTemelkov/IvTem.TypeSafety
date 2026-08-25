@@ -6,13 +6,19 @@ This project is AI-assisted. Planning and implementation are assisted by OpenAI 
 
 ## Status
 
-The repository is currently scaffolded only. Analyzer and source-generator behavior will be implemented in later tasks.
+The repository currently contains the initial analyzer/source-generator implementation and package-content validation for the `0.1.0` package.
 
 ## Package Goals
 
 - Generate internal attributes in consuming compilations under `IvTem.TypeSafety`.
 - Report compile-time diagnostics when restricted generic type arguments are used.
 - Ship as analyzer/source-generator assets without a runtime library dependency.
+
+## Package Shape
+
+`IvTem.TypeSafety` is packaged as a Roslyn analyzer/source-generator package. The `.nupkg` places `IvTem.TypeSafety.dll` under `analyzers/dotnet/cs/` and intentionally does not include a runtime `lib/` assembly.
+
+The package also includes `README.md`, MIT license metadata, Git repository metadata, and a `.snupkg` symbol package.
 
 ## Development
 
@@ -21,4 +27,5 @@ Restore and build the repository with:
 ```powershell
 dotnet restore
 dotnet build
+dotnet pack -c Release
 ```

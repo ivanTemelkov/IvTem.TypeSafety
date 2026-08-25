@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 12 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 13.
+- Phase: Task 13 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated.
+- Stop condition: Wait for explicit instruction before Task 14.
 
 ## Validation performed
 
@@ -50,6 +50,12 @@
 - Task 12: Ran `dotnet test IvTem.TypeSafety.slnx --filter CrossAssembly`; 7 cross-assembly tests passed.
 - Task 12: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 104 tests.
 - Task 12: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 13: Ran `dotnet pack IvTem.TypeSafety.slnx -c Release`; Release `.nupkg` and `.snupkg` artifacts were produced.
+- Task 13: Ran `dotnet test IvTem.TypeSafety.slnx --filter PackageContentTests`; 1 package-content validation test passed.
+- Task 13: Ran `dotnet build IvTem.TypeSafety.slnx -c Release`; build succeeded with 0 warnings and 0 errors.
+- Task 13: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 105 tests.
+- Task 13: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `README.md`, and nuspec/package metadata with no `lib/` entries.
+- Task 13: Inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` with no `lib/` entries.
 
 ## Work completed
 
@@ -107,6 +113,10 @@
 - Task 12: Added analyzer test infrastructure for in-memory referenced assemblies with generated embedded attributes and additional metadata references.
 - Task 12: Added defensive skipping for unresolved/error forbidden metadata types while preserving existing invalid configuration diagnostics for open/unbound generics.
 - Task 12: Added cross-assembly tests proving referenced generic type contracts, embedded attribute assembly-identity independence, referenced generic method contracts, referenced propagated type contracts, metadata-only malformed lookalike handling, metadata-only invalid configurations without source locations, and generated referenced declarations consumed from metadata.
+- Task 13: Configured analyzer-only package output for `IvTem.TypeSafety` version `0.1.0` with MIT license metadata, README inclusion, Git repository metadata, Source Link package reference, and `.snupkg` symbol package output.
+- Task 13: Added explicit package content under `analyzers/dotnet/cs/` and suppressed normal runtime `lib/` output from the main package.
+- Task 13: Added package-content validation that runs `dotnet pack`, opens the produced `.nupkg` and `.snupkg`, and asserts required analyzer assets, README, metadata, repository commit metadata, symbol package output, Source Link payload, and absence of `lib/` entries.
+- Task 13: Updated README and changelog to describe the implemented analyzer/source-generator and analyzer-only package shape.
 
 ## Decisions made during planning
 
@@ -202,12 +212,18 @@
 - Kept attribute identity based on fully qualified metadata name plus expected shape rather than shared assembly identity.
 - Proved cross-assembly behavior with C#-emitted metadata references; the analyzer reads standard CLR metadata and does not add language-specific source analysis for non-C# assemblies.
 
+## Decisions made during Task 13
+
+- Kept `IncludeBuildOutput=true` only to let NuGet produce `.snupkg` symbols, then removed collected runtime build output before packaging so the main `.nupkg` has no `lib/` assembly.
+- Added the analyzer DLL as explicit TFM-specific package content at `analyzers/dotnet/cs/IvTem.TypeSafety.dll` to avoid NuGet inserting `netstandard2.0` under the analyzer path in the main package.
+- Scoped `NU5128` suppression to the analyzer project because the no-`lib/` package shape is intentional for analyzer/source-generator distribution and is covered by package-content tests.
+- Accepted NuGet's deterministic symbol package path `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` while requiring no `lib/` entries in the `.snupkg`.
+
 ## Unresolved issues
 
 - Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
 - NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
-- Source Link and package contents have not been validated beyond build/restore; Task 13 must inspect the produced `.nupkg`.
 
 ## Deferred features from specification
 
