@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 8 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 9.
+- Phase: Task 9 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 10.
 
 ## Validation performed
 
@@ -38,6 +38,9 @@
 - Task 8: Ran `dotnet test IvTem.TypeSafety.slnx --filter MemberPropagation`; 7 member-propagation tests passed.
 - Task 8: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 71 tests.
 - Task 8: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 9: Ran `dotnet test IvTem.TypeSafety.slnx --filter TypePropagation`; 10 type-propagation tests passed.
+- Task 9: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 81 tests.
+- Task 9: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -80,6 +83,9 @@
 - Task 8: Added `MemberRestrictionPolicyProvider` to collect generic method contracts from direct declarations, partial method counterpart symbols, overridden methods, explicit interface implementations, and Roslyn-resolved implicit interface implementations.
 - Task 8: Updated generic method use-site validation to use unioned member policies while leaving named generic type policy extraction direct-only for Task 9.
 - Task 8: Added member propagation tests covering implicit interface implementation, overrides, explicit interface implementation, multiple interface contract unioning, ordinal mapping across multiple method type parameters, partial method declaration/implementation behavior, and duplicate inherited interface paths.
+- Task 9: Added `NamedTypeRestrictionPolicyProvider` to collect generic named-type contracts from direct declarations plus generic base class and interface mappings.
+- Task 9: Updated named generic type use-site validation to enforce unioned direct and inherited type-parameter policies while preserving the existing member-policy path for generic methods.
+- Task 9: Added type-propagation tests covering generic interfaces, generic base classes, multiple inherited contracts, transitive inheritance, partial declaration contract merging, reordered mappings, repeated mappings, immediate concrete base/interface declaration violations, and diamond-path diagnostic de-duplication.
 
 ## Decisions made during planning
 
@@ -144,6 +150,14 @@
 - Mapped inherited member type parameters to implementation type parameters by ordinal, matching C# override/interface generic arity rules.
 - Combined direct and inherited restrictions as a semantic union per restriction kind, preserving one `IVTS001` per offending method type argument.
 - Included partial method definition and implementation counterpart symbols as contract sources so attributes on either part are visible at use sites.
+
+## Decisions made during Task 9
+
+- Used a per-compilation named-type policy provider keyed by original type definition so constructed use sites reuse the same inherited contract calculation.
+- Mapped base/interface policies only when the constructed base/interface type argument is directly the derived type parameter in scope; transformed mappings such as wrappers, arrays, and nested constructed arguments remain deferred.
+- Walked generic base classes and `AllInterfaces` so direct, transitive, and multiple-interface paths contribute to the derived type contract.
+- Deduplicated inherited forbidden types per policy kind by semantic type identity so diamond paths and repeated mappings preserve one diagnostic per offending generic argument.
+- Kept immediate concrete forbidden base/interface declaration diagnostics in the existing constructed-type use-site path rather than adding a separate declaration analyzer.
 
 ## Unresolved issues
 

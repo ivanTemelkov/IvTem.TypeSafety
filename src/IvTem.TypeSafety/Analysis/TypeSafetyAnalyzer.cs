@@ -26,11 +26,12 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         {
             var extractor = new DirectRestrictionPolicyExtractor();
             var memberRestrictionPolicyProvider = new MemberRestrictionPolicyProvider(extractor);
+            var namedTypeRestrictionPolicyProvider = new NamedTypeRestrictionPolicyProvider(extractor);
             var exactTypeMatcher = new ExactTypeMatcher(compilationStartContext.Compilation);
             var assignableTypeMatcher = new AssignableTypeMatcher(compilationStartContext.Compilation);
             var constructedTypeUseValidator = new ConstructedTypeUseValidator(
-                extractor,
                 memberRestrictionPolicyProvider,
+                namedTypeRestrictionPolicyProvider,
                 exactTypeMatcher,
                 assignableTypeMatcher,
                 new DiagnosticDeduplicator());
