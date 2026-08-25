@@ -198,6 +198,9 @@ internal sealed class DirectRestrictionPolicyExtractor
                 continue;
             }
 
+            if (ContainsErrorType(type))
+                continue;
+
             target.Add(new ForbiddenType(
                 type,
                 type.ToDisplayString(TypeDisplayFormat),
@@ -253,6 +256,16 @@ internal sealed class DirectRestrictionPolicyExtractor
             INamedTypeSymbol namedType => namedType.TypeArguments.Any(ContainsTypeParameter),
             IArrayTypeSymbol arrayType => ContainsTypeParameter(arrayType.ElementType),
             IPointerTypeSymbol pointerType => ContainsTypeParameter(pointerType.PointedAtType),
+            _ => false
+        };
+
+    private static bool ContainsErrorType(ITypeSymbol type)
+        => type switch
+        {
+            IErrorTypeSymbol => true,
+            INamedTypeSymbol namedType => namedType.TypeArguments.Any(ContainsErrorType),
+            IArrayTypeSymbol arrayType => ContainsErrorType(arrayType.ElementType),
+            IPointerTypeSymbol pointerType => ContainsErrorType(pointerType.PointedAtType),
             _ => false
         };
 

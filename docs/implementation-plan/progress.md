@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 11 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 12.
+- Phase: Task 12 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 13.
 
 ## Validation performed
 
@@ -47,6 +47,9 @@
 - Task 11: Ran `dotnet test IvTem.TypeSafety.slnx --filter Cycles`; 7 cycle-detection tests passed.
 - Task 11: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 97 tests.
 - Task 11: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 12: Ran `dotnet test IvTem.TypeSafety.slnx --filter CrossAssembly`; 7 cross-assembly tests passed.
+- Task 12: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 104 tests.
+- Task 12: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
 
 ## Work completed
 
@@ -101,6 +104,9 @@
 - Task 11: Added deterministic cycle diagnostic locations using ordered source type-parameter declarations.
 - Task 11: Suppressed propagated use-site diagnostics for cyclic source graph nodes while preserving direct policy extraction.
 - Task 11: Added cycle-detection tests covering two-type cycles, longer cycles, duplicate paths, nongeneric recursion exclusion, stack-safety, acyclic deep propagation, and suppression of cyclic-propagation use-site cascades.
+- Task 12: Added analyzer test infrastructure for in-memory referenced assemblies with generated embedded attributes and additional metadata references.
+- Task 12: Added defensive skipping for unresolved/error forbidden metadata types while preserving existing invalid configuration diagnostics for open/unbound generics.
+- Task 12: Added cross-assembly tests proving referenced generic type contracts, embedded attribute assembly-identity independence, referenced generic method contracts, referenced propagated type contracts, metadata-only malformed lookalike handling, metadata-only invalid configurations without source locations, and generated referenced declarations consumed from metadata.
 
 ## Decisions made during planning
 
@@ -190,13 +196,18 @@
 - Chose the diagnostic location from the earliest deterministic source type-parameter declaration in the component, falling back to `Location.None` only for metadata-only participants.
 - Suppressed only propagated policies from cyclic source nodes, rather than suppressing an entire generic type, so unrelated noncyclic ordinals and direct restrictions can still participate.
 
+## Decisions made during Task 12
+
+- Treated metadata-only malformed lookalike attributes as ignored defensively, preserving `IVTS005` for current-source malformed lookalikes only.
+- Kept attribute identity based on fully qualified metadata name plus expected shape rather than shared assembly identity.
+- Proved cross-assembly behavior with C#-emitted metadata references; the analyzer reads standard CLR metadata and does not add language-specific source analysis for non-C# assemblies.
+
 ## Unresolved issues
 
 - Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
 - NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
 - Source Link and package contents have not been validated beyond build/restore; Task 13 must inspect the produced `.nupkg`.
-- Cross-assembly behavior for malformed metadata-only lookalikes remains unimplemented until Task 12.
 
 ## Deferred features from specification
 

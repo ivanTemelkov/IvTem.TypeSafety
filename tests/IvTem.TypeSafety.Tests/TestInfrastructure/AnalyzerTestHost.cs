@@ -13,9 +13,12 @@ namespace IvTem.TypeSafety.Tests.TestInfrastructure;
 
 internal static class AnalyzerTestHost
 {
-    public static ImmutableArray<Diagnostic> GetAnalyzerDiagnostics(string source, bool runGenerator = true)
+    public static ImmutableArray<Diagnostic> GetAnalyzerDiagnostics(
+        string source,
+        bool runGenerator = true,
+        IEnumerable<MetadataReference>? additionalReferences = null)
     {
-        var compilation = CreateCompilation(source);
+        var compilation = CreateCompilation(source, additionalReferences: additionalReferences);
 
         if (runGenerator)
             compilation = RunGenerator(compilation);
@@ -34,14 +37,38 @@ internal static class AnalyzerTestHost
     public static CSharpCompilation CreateGeneratedCompilation(string source)
         => RunGenerator(CreateCompilation(source));
 
-    private static CSharpCompilation CreateCompilation(string source)
+    public static MetadataReference CreateGeneratedMetadataReference(string source, string assemblyName)
+        => CreateMetadataReference(source, assemblyName, runGenerator: true);
+
+    public static MetadataReference CreateMetadataReference(string source, string assemblyName, bool runGenerator = true)
+    {
+        using var stream = new MemoryStream();
+        var compilation = CreateCompilation(source, assemblyName);
+        if (runGenerator)
+            compilation = RunGenerator(compilation);
+
+        var emitResult = compilation.Emit(stream);
+
+        if (emitResult.Success == false)
+            throw new InvalidOperationException(string.Join(Environment.NewLine, emitResult.Diagnostics.Select(diagnostic => diagnostic.ToString())));
+
+        stream.Position = 0;
+        return MetadataReference.CreateFromImage(stream.ToArray());
+    }
+
+    private static CSharpCompilation CreateCompilation(
+        string source,
+        string assemblyName = "Consumer",
+        IEnumerable<MetadataReference>? additionalReferences = null)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
-        var references = GetReferences();
+        var references = GetReferences()
+            .Concat(additionalReferences ?? Enumerable.Empty<MetadataReference>())
+            .ToArray();
 
         return CSharpCompilation.Create(
-            assemblyName: "Consumer",
+            assemblyName: assemblyName,
             syntaxTrees: new[] { syntaxTree },
             references: references,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
