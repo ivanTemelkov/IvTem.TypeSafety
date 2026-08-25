@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <Analyzer Include="$(MSBuildThisFileDirectory)..\analyzers\dotnet\cs\IvTem.TypeSafety.dll"
+              Condition="Exists('$(MSBuildThisFileDirectory)..\analyzers\dotnet\cs\IvTem.TypeSafety.dll')" />
+  </ItemGroup>
+</Project>

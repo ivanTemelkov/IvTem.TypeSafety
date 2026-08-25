@@ -6,7 +6,7 @@ This project is AI-assisted. Planning and implementation are assisted by OpenAI 
 
 ## Status
 
-The repository currently contains the initial analyzer/source-generator implementation and package-content validation for the `0.1.0` package.
+The repository currently contains the initial analyzer/source-generator implementation, package-content validation, and NuGet/MSBuild transitive-enforcement integration tests for the `0.1.0` package.
 
 ## Package Goals
 
@@ -19,6 +19,8 @@ The repository currently contains the initial analyzer/source-generator implemen
 `IvTem.TypeSafety` is packaged as a Roslyn analyzer/source-generator package. The `.nupkg` places `IvTem.TypeSafety.dll` under `analyzers/dotnet/cs/` and intentionally does not include a runtime `lib/` assembly.
 
 The package also includes `README.md`, MIT license metadata, Git repository metadata, and a `.snupkg` symbol package.
+
+The package includes a `buildTransitive` props asset so downstream projects can receive the analyzer when `IvTem.TypeSafety` flows as a normal transitive package dependency. See `docs/limitations.md` for the precise tested boundary.
 
 ## Development
 

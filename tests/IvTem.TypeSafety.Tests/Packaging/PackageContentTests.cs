@@ -10,6 +10,7 @@ using Xunit;
 
 namespace IvTem.TypeSafety.Tests.Packaging;
 
+[Collection("Package build")]
 public sealed class PackageContentTests
 {
     private const string PackageId = "IvTem.TypeSafety";
@@ -31,6 +32,7 @@ public sealed class PackageContentTests
         Assert.DoesNotContain(packageEntries, entry => entry.StartsWith("lib/", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(symbolEntries, entry => entry.StartsWith("lib/", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("analyzers/dotnet/cs/IvTem.TypeSafety.dll", packageEntries);
+        Assert.Contains("buildTransitive/IvTem.TypeSafety.props", packageEntries);
         Assert.Contains("README.md", packageEntries);
         Assert.Contains("analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb", symbolEntries);
         Assert.Contains("raw.githubusercontent.com", sourceLinkContent, StringComparison.Ordinal);

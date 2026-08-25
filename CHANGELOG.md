@@ -9,3 +9,5 @@ All notable changes to `IvTem.TypeSafety` will be documented in this file.
 - Generic type-safety analyzer with direct, propagated, cross-assembly, and cycle-detection coverage.
 - Analyzer-only NuGet package layout under `analyzers/dotnet/cs/` with no runtime `lib/` assembly.
 - Automated package-content validation for NuGet metadata, analyzer assets, README inclusion, and symbol package output.
+- `buildTransitive` package asset for tested downstream analyzer enforcement through normal project and package dependency flow.
+- Temporary-project integration tests for direct package, project-reference, and package-transitive enforcement.

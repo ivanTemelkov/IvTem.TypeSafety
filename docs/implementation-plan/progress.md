@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 13 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated.
-- Stop condition: Wait for explicit instruction before Task 14.
+- Phase: Task 14 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests.
+- Stop condition: Wait for explicit instruction before Task 15.
 
 ## Validation performed
 
@@ -56,6 +56,12 @@
 - Task 13: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 105 tests.
 - Task 13: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `README.md`, and nuspec/package metadata with no `lib/` entries.
 - Task 13: Inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` with no `lib/` entries.
+- Task 14: Ran `dotnet restore IvTem.TypeSafety.slnx`; restore succeeded after elevated access to local SDK metadata under the user profile.
+- Task 14: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors after aligning Roslyn package references to the SDK compiler.
+- Task 14: Ran `dotnet test IvTem.TypeSafety.slnx --filter "FullyQualifiedName~Packaging"`; 4 packaging/transitive integration tests passed.
+- Task 14: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 108 tests.
+- Task 14: Ran `dotnet pack IvTem.TypeSafety.slnx -c Release`; Release `.nupkg` and `.snupkg` artifacts were produced after elevated access to local SDK metadata under the user profile.
+- Task 14: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, `README.md`, and nuspec/package metadata with no `lib/` entries.
 
 ## Work completed
 
@@ -117,6 +123,11 @@
 - Task 13: Added explicit package content under `analyzers/dotnet/cs/` and suppressed normal runtime `lib/` output from the main package.
 - Task 13: Added package-content validation that runs `dotnet pack`, opens the produced `.nupkg` and `.snupkg`, and asserts required analyzer assets, README, metadata, repository commit metadata, symbol package output, Source Link payload, and absence of `lib/` entries.
 - Task 13: Updated README and changelog to describe the implemented analyzer/source-generator and analyzer-only package shape.
+- Task 14: Added `buildTransitive/IvTem.TypeSafety.props` to the package so downstream projects that receive `IvTem.TypeSafety` transitively also receive the analyzer/source-generator asset.
+- Task 14: Added temporary-project integration tests for direct `PackageReference`, project-reference transitive flow, and package-reference transitive flow.
+- Task 14: Serialized package-build tests and isolated temporary NuGet global package folders to avoid Release pack races and stale local package cache reuse.
+- Task 14: Downgraded the Roslyn package reference from `5.9.0` to `5.6.0` because the packaged analyzer must load in the installed .NET SDK compiler used by real builds.
+- Task 14: Added `docs/architecture.md` and `docs/limitations.md` to document the tested NuGet/MSBuild enforcement boundary.
 
 ## Decisions made during planning
 
@@ -219,11 +230,17 @@
 - Scoped `NU5128` suppression to the analyzer project because the no-`lib/` package shape is intentional for analyzer/source-generator distribution and is covered by package-content tests.
 - Accepted NuGet's deterministic symbol package path `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` while requiring no `lib/` entries in the `.snupkg`.
 
+## Decisions made during Task 14
+
+- Added a `buildTransitive` props file rather than relying on NuGet analyzer assets alone, because transitive consumers need an imported MSBuild asset that explicitly adds the analyzer.
+- Treat normal package dependency flow as the supported transitive boundary; dependencies hidden with `PrivateAssets="all"` or equivalent asset exclusions are not claimed.
+- Kept Roslyn analyzer dependencies no newer than the SDK compiler version proven by integration tests to avoid `CS9057` analyzer load failures.
+
 ## Unresolved issues
 
 - Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
-- NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
+- No current unresolved NuGet analyzer transitivity issue remains for the tested normal dependency-flow scenarios.
 
 ## Deferred features from specification
 
@@ -244,7 +261,7 @@
 - The style guide conflicts mildly with the `netstandard2.0` analyzer target; the plan separates repository tooling from analyzer assembly target framework.
 - The task outline is easier to preserve if each task has a separate execution contract file.
 - `dotnet sln` and `dotnet restore` need access to local SDK metadata under the user profile on this machine.
-- Current Roslyn compiler package metadata confirms `Microsoft.CodeAnalysis.CSharp` `5.9.0` supports `netstandard2.0` and .NET 10.
+- Real SDK package-load tests require the analyzer to reference Roslyn `5.6.0` or older on this machine; Roslyn `5.9.0` compiled but failed as a packaged analyzer with `CS9057` because the SDK compiler was older.
 - Analyzer projects targeting `netstandard2.0` should avoid production positional records unless an `IsExternalInit` compatibility shim is intentionally added.
 - `System.Attribute` and `System.Type` are not represented by `SpecialType` enum values in Roslyn; metadata-name checks are needed for those shape validations.
 - Roslyn exposes `[DisallowTypes(null)]` as a null params array and `[DisallowTypes(typeof(string), null)]` as an array containing a null entry, so both cases can be diagnosed distinctly.

@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="buildTransitive\IvTem.TypeSafety.props" Pack="true" PackagePath="buildTransitive\" />
   </ItemGroup>
 
   <Target Name="AddAnalyzerPackageContent" DependsOnTargets="Build">
