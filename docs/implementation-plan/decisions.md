@@ -51,6 +51,13 @@
 - Reasoning: This satisfies the duplicate-diagnostic requirement and keeps diagnostics actionable.
 - Consequences: Diagnostic messages must list matched restrictions deterministically.
 
+### ADR-008: Malformed current-source metadata diagnostics
+
+- Status: Implemented pending approval.
+- Decision: Implement `IVTS005` for attributes whose fully qualified metadata name is `IvTem.TypeSafety.DisallowTypesAttribute` or `IvTem.TypeSafety.DisallowExactTypesAttribute` but whose current-source metadata shape does not match the v1 contract.
+- Reasoning: Task 03 requires defensive shape validation and the implementation plan preferred diagnostics for relevant current-compilation source rather than silently ignoring malformed lookalikes.
+- Consequences: Referenced metadata-only malformed lookalikes may need refined handling during the cross-assembly task.
+
 ## Approved decisions
 
 No implementation decisions have been approved yet.

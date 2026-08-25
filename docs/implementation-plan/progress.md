@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 2 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested.
-- Stop condition: Wait for explicit instruction before Task 3.
+- Phase: Task 3 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested.
+- Stop condition: Wait for explicit instruction before Task 4.
 
 ## Validation performed
 
@@ -20,6 +20,8 @@
 - Task 1: Ran `git status --short`; scaffolding files are untracked, and pre-existing `docs/` content remains untracked.
 - Task 2: Ran `dotnet test IvTem.TypeSafety.slnx --filter TypeSafetyAttributeGeneratorTests`; 6 generator tests passed.
 - Task 2: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors.
+- Task 3: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded after replacing positional records with `netstandard2.0`-portable immutable classes and correcting Roslyn metadata checks.
+- Task 3: Ran `dotnet test IvTem.TypeSafety.slnx --filter DirectRestrictionPolicyExtractionTests`; 14 analyzer/policy extraction tests passed.
 
 ## Work completed
 
@@ -36,6 +38,13 @@
 - Task 2: Added `TypeSafetyAttributeGenerator` as an incremental source generator.
 - Task 2: Added deterministic generated source for `IvTem.TypeSafety.DisallowTypesAttribute` and `IvTem.TypeSafety.DisallowExactTypesAttribute`.
 - Task 2: Added generator tests covering source emission, generic-parameter usage, internal accessibility, repeated usage, namespace and constructor shape, and absence of a consumer runtime reference to the analyzer assembly.
+- Task 3: Added centralized diagnostic descriptors for `IVTS001` through `IVTS005`.
+- Task 3: Added `TypeSafetyAnalyzer` with declaration-time analysis for named type and method generic parameters.
+- Task 3: Added direct policy extraction for `DisallowTypesAttribute` and `DisallowExactTypesAttribute` based on namespace plus metadata name, expected shape validation, immutable policy output, and semantic de-duplication per restriction kind.
+- Task 3: Added configuration diagnostics for empty type lists, null type lists, null entries, open/unbound generic types, forbidden types containing generic parameters, and `DisallowTypes(typeof(object))`.
+- Task 3: Added malformed lookalike metadata diagnostics for current-source attributes that use the owned metadata names but fail the v1 shape contract.
+- Task 3: Added analyzer test infrastructure that runs the embedded attribute generator before analyzer diagnostics.
+- Task 3: Added focused policy/configuration tests covering valid direct extraction, exact extraction, multiple attributes, multiple constructor arguments, duplicate de-duplication, invalid configuration cases, malformed metadata, and `DisallowExactTypes(typeof(object))`.
 
 ## Decisions made during planning
 
@@ -54,13 +63,23 @@
 - Task 2 uses a direct `CSharpGeneratorDriver` test harness instead of Roslyn testing framework wrappers, because the direct harness is sufficient for the embedded-source behavior and avoids stale Roslyn testing package conflicts.
 - The test project references `IvTem.TypeSafety` as a normal private project reference so tests can instantiate the generator; consumer-reference behavior is proven inside the generated consumer compilation.
 
+## Decisions made during Task 3
+
+- Kept policy extraction independent from use-site enforcement; valid policies are parsed and tested, but `IVTS001` matching remains deferred to Tasks 4 and 5.
+- Implemented `IVTS005` for current-source malformed lookalike attributes with the owned metadata names; referenced metadata-only behavior remains deferred to Task 12.
+- Used namespace plus metadata name for attribute recognition, not assembly identity, because generated attributes are embedded into consuming compilations.
+- Required the v1 attribute constructor shape to be one `params System.Type[]` parameter.
+- Used `SymbolEqualityComparer.Default` for semantic duplicate removal per restriction kind, preserving first declaration order with display name as a deterministic tie breaker.
+- Used immutable sealed classes instead of positional records in production policy models because the analyzer assembly targets `netstandard2.0`.
+
 ## Unresolved issues
 
-- Whether to include `IVTS005` for malformed lookalike metadata.
+- Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
 - Whether nested generic type propagation should cross containing type parameters in v1.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
 - NuGet analyzer transitivity must be proven by integration tests before documentation claims it.
 - Source Link and package contents have not been validated beyond build/restore; Task 13 must inspect the produced `.nupkg`.
+- Cross-assembly behavior for malformed metadata-only lookalikes remains unimplemented until Task 12.
 
 ## Deferred features from specification
 
@@ -82,3 +101,6 @@
 - The task outline is easier to preserve if each task has a separate execution contract file.
 - `dotnet sln` and `dotnet restore` need access to local SDK metadata under the user profile on this machine.
 - Current Roslyn compiler package metadata confirms `Microsoft.CodeAnalysis.CSharp` `5.9.0` supports `netstandard2.0` and .NET 10.
+- Analyzer projects targeting `netstandard2.0` should avoid production positional records unless an `IsExternalInit` compatibility shim is intentionally added.
+- `System.Attribute` and `System.Type` are not represented by `SpecialType` enum values in Roslyn; metadata-name checks are needed for those shape validations.
+- Roslyn exposes `[DisallowTypes(null)]` as a null params array and `[DisallowTypes(typeof(string), null)]` as an array containing a null entry, so both cases can be diagnosed distinctly.
