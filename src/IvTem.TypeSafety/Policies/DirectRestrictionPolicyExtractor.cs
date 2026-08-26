@@ -33,11 +33,13 @@ internal sealed class DirectRestrictionPolicyExtractor
 
             if (HasExpectedAttributeShape(attribute.AttributeClass) == false)
             {
-                reportDiagnostic(CreateMalformedAttributeDiagnostic(
-                    attribute,
-                    typeParameter,
-                    "expected an attribute deriving from System.Attribute with one params System.Type[] constructor parameter",
-                    cancellationToken));
+                ReportDiagnostic(
+                    reportDiagnostic,
+                    CreateMalformedAttributeDiagnostic(
+                        attribute,
+                        typeParameter,
+                        "expected an attribute deriving from System.Attribute with one params System.Type[] constructor parameter",
+                        cancellationToken));
                 continue;
             }
 
@@ -118,44 +120,52 @@ internal sealed class DirectRestrictionPolicyExtractor
     {
         if (attribute.ConstructorArguments.Length != 1)
         {
-            reportDiagnostic(CreateMalformedAttributeDiagnostic(
-                attribute,
-                typeParameter,
-                "expected exactly one constructor argument",
-                cancellationToken));
+            ReportDiagnostic(
+                reportDiagnostic,
+                CreateMalformedAttributeDiagnostic(
+                    attribute,
+                    typeParameter,
+                    "expected exactly one constructor argument",
+                    cancellationToken));
             return;
         }
 
         var argument = attribute.ConstructorArguments[0];
         if (argument.IsNull)
         {
-            reportDiagnostic(CreateInvalidConfigurationDiagnostic(
-                attribute,
-                typeParameter,
-                restrictionKind,
-                "the type list is null",
-                cancellationToken));
+            ReportDiagnostic(
+                reportDiagnostic,
+                CreateInvalidConfigurationDiagnostic(
+                    attribute,
+                    typeParameter,
+                    restrictionKind,
+                    "the type list is null",
+                    cancellationToken));
             return;
         }
 
         if (argument.Kind != TypedConstantKind.Array)
         {
-            reportDiagnostic(CreateMalformedAttributeDiagnostic(
-                attribute,
-                typeParameter,
-                "expected a System.Type[] constructor argument",
-                cancellationToken));
+            ReportDiagnostic(
+                reportDiagnostic,
+                CreateMalformedAttributeDiagnostic(
+                    attribute,
+                    typeParameter,
+                    "expected a System.Type[] constructor argument",
+                    cancellationToken));
             return;
         }
 
         if (argument.Values.Length == 0)
         {
-            reportDiagnostic(CreateInvalidConfigurationDiagnostic(
-                attribute,
-                typeParameter,
-                restrictionKind,
-                "the type list is empty",
-                cancellationToken));
+            ReportDiagnostic(
+                reportDiagnostic,
+                CreateInvalidConfigurationDiagnostic(
+                    attribute,
+                    typeParameter,
+                    restrictionKind,
+                    "the type list is empty",
+                    cancellationToken));
             return;
         }
 
@@ -166,45 +176,55 @@ internal sealed class DirectRestrictionPolicyExtractor
 
             if (entry.IsNull)
             {
-                reportDiagnostic(CreateInvalidConfigurationDiagnostic(
-                    attribute,
-                    typeParameter,
-                    restrictionKind,
-                    "the type list contains a null entry",
-                    cancellationToken));
+                ReportDiagnostic(
+                    reportDiagnostic,
+                    CreateInvalidConfigurationDiagnostic(
+                        attribute,
+                        typeParameter,
+                        restrictionKind,
+                        "the type list contains a null entry",
+                        cancellationToken));
                 continue;
             }
 
             if (entry.Kind != TypedConstantKind.Type || entry.Value is not ITypeSymbol type)
             {
-                reportDiagnostic(CreateInvalidConfigurationDiagnostic(
-                    attribute,
-                    typeParameter,
-                    restrictionKind,
-                    "each entry must be a System.Type value",
-                    cancellationToken));
+                ReportDiagnostic(
+                    reportDiagnostic,
+                    CreateInvalidConfigurationDiagnostic(
+                        attribute,
+                        typeParameter,
+                        restrictionKind,
+                        "each entry must be a System.Type value",
+                        cancellationToken));
                 continue;
             }
 
             var invalidReason = GetInvalidForbiddenTypeReason(type, restrictionKind);
             if (invalidReason is not null)
             {
-                reportDiagnostic(CreateInvalidConfigurationDiagnostic(
-                    attribute,
-                    typeParameter,
-                    restrictionKind,
-                    invalidReason,
-                    cancellationToken));
+                ReportDiagnostic(
+                    reportDiagnostic,
+                    CreateInvalidConfigurationDiagnostic(
+                        attribute,
+                        typeParameter,
+                        restrictionKind,
+                        invalidReason,
+                        cancellationToken));
                 continue;
             }
 
             if (ContainsErrorType(type))
                 continue;
 
+            var location = GetAttributeLocation(attribute, typeParameter, cancellationToken);
+            if (ShouldUseRestrictionAttribute(location) == false)
+                continue;
+
             target.Add(new ForbiddenType(
                 type,
                 type.ToDisplayString(TypeDisplayFormat),
-                GetAttributeLocation(attribute, typeParameter, cancellationToken),
+                location,
                 declarationOrder));
         }
     }
@@ -269,29 +289,41 @@ internal sealed class DirectRestrictionPolicyExtractor
             _ => false
         };
 
-    private static Diagnostic CreateInvalidConfigurationDiagnostic(
+    private static Diagnostic? CreateInvalidConfigurationDiagnostic(
         AttributeData attribute,
         ITypeParameterSymbol typeParameter,
         RestrictionKind restrictionKind,
         string reason,
         CancellationToken cancellationToken)
-        => Diagnostic.Create(
+    {
+        var location = GetAttributeLocation(attribute, typeParameter, cancellationToken);
+        if (SourceFileLocationPolicy.IsAnalyzable(location) == false)
+            return null;
+
+        return Diagnostic.Create(
             TypeSafetyDiagnosticDescriptors.InvalidConfiguration,
-            GetAttributeLocation(attribute, typeParameter, cancellationToken),
+            location,
             GetConfigurationName(restrictionKind),
             typeParameter.Name,
             reason);
+    }
 
-    private static Diagnostic CreateMalformedAttributeDiagnostic(
+    private static Diagnostic? CreateMalformedAttributeDiagnostic(
         AttributeData attribute,
         ITypeParameterSymbol typeParameter,
         string reason,
         CancellationToken cancellationToken)
-        => Diagnostic.Create(
+    {
+        var location = GetAttributeLocation(attribute, typeParameter, cancellationToken);
+        if (SourceFileLocationPolicy.IsAnalyzable(location) == false)
+            return null;
+
+        return Diagnostic.Create(
             TypeSafetyDiagnosticDescriptors.MalformedAttributeMetadata,
-            GetAttributeLocation(attribute, typeParameter, cancellationToken),
+            location,
             attribute.AttributeClass?.ToDisplayString(TypeDisplayFormat) ?? "<unknown>",
             reason);
+    }
 
     private static string GetConfigurationName(RestrictionKind restrictionKind)
         => restrictionKind switch
@@ -309,4 +341,13 @@ internal sealed class DirectRestrictionPolicyExtractor
 
         return typeParameter.Locations.FirstOrDefault() ?? Location.None;
     }
+
+    private static void ReportDiagnostic(Action<Diagnostic> reportDiagnostic, Diagnostic? diagnostic)
+    {
+        if (diagnostic is not null)
+            reportDiagnostic(diagnostic);
+    }
+
+    private static bool ShouldUseRestrictionAttribute(Location location)
+        => location.SourceTree is null || SourceFileLocationPolicy.IsAnalyzable(location);
 }

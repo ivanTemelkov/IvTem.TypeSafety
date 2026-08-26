@@ -108,7 +108,7 @@ internal sealed class ConstructedTypeUseValidator
                 continue;
 
             var location = GetTypeArgumentLocation(typeArgumentLocations, fallbackLocation, index);
-            if (location.IsInSource == false)
+            if (SourceFileLocationPolicy.IsAnalyzable(location) == false)
                 continue;
 
             if (diagnosticDeduplicator.TryMarkReported(location, index) == false)
@@ -165,7 +165,7 @@ internal sealed class ConstructedTypeUseValidator
     private static ImmutableArray<Location> GetAdditionalLocations(ImmutableArray<MatchedRestriction> matchedRestrictions)
         => matchedRestrictions
             .Select(matchedRestriction => matchedRestriction.Location)
-            .Where(location => location.IsInSource)
+            .Where(SourceFileLocationPolicy.IsAnalyzable)
             .Distinct()
             .ToImmutableArray();
 

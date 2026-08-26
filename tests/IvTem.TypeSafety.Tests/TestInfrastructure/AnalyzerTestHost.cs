@@ -19,9 +19,35 @@ internal static class AnalyzerTestHost
         string source,
         bool runGenerator = true,
         IEnumerable<MetadataReference>? additionalReferences = null,
-        string sourcePath = DefaultSourcePath)
+        string sourcePath = DefaultSourcePath,
+        bool writePhysicalSource = true)
     {
-        var compilation = CreateCompilation(source, additionalReferences: additionalReferences, sourcePath: sourcePath);
+        var compilation = CreateCompilation(
+            source,
+            additionalReferences: additionalReferences,
+            sourcePath: sourcePath,
+            writePhysicalSource: writePhysicalSource);
+
+        if (runGenerator)
+            compilation = RunGenerator(compilation);
+
+        var analyzer = new TypeSafetyAnalyzer();
+        var compilationWithAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create<DiagnosticAnalyzer>(analyzer));
+
+        return compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync()
+            .GetAwaiter()
+            .GetResult()
+            .OrderBy(diagnostic => diagnostic.Id, StringComparer.Ordinal)
+            .ThenBy(diagnostic => diagnostic.Location.SourceSpan.Start)
+            .ToImmutableArray();
+    }
+
+    public static ImmutableArray<Diagnostic> GetAnalyzerDiagnostics(
+        IEnumerable<AnalyzerTestSource> sources,
+        bool runGenerator = true,
+        IEnumerable<MetadataReference>? additionalReferences = null)
+    {
+        var compilation = CreateCompilation(sources, additionalReferences: additionalReferences);
 
         if (runGenerator)
             compilation = RunGenerator(compilation);
@@ -63,17 +89,33 @@ internal static class AnalyzerTestHost
         string source,
         string assemblyName = "Consumer",
         IEnumerable<MetadataReference>? additionalReferences = null,
-        string sourcePath = DefaultSourcePath)
+        string sourcePath = DefaultSourcePath,
+        bool writePhysicalSource = true)
+        => CreateCompilation(
+            new[] { new AnalyzerTestSource(source, sourcePath, writePhysicalSource) },
+            assemblyName,
+            additionalReferences);
+
+    private static CSharpCompilation CreateCompilation(
+        IEnumerable<AnalyzerTestSource> sources,
+        string assemblyName = "Consumer",
+        IEnumerable<MetadataReference>? additionalReferences = null)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
-        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions, sourcePath);
+        var syntaxTrees = sources
+            .Select(source =>
+                CSharpSyntaxTree.ParseText(
+                    source.Source,
+                    parseOptions,
+                    PrepareSourcePath(source.SourcePath, source.Source, source.WritePhysicalSource)))
+            .ToArray();
         var references = GetReferences()
             .Concat(additionalReferences ?? Enumerable.Empty<MetadataReference>())
             .ToArray();
 
         return CSharpCompilation.Create(
             assemblyName: assemblyName,
-            syntaxTrees: new[] { syntaxTree },
+            syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
@@ -83,7 +125,7 @@ internal static class AnalyzerTestHost
         IIncrementalGenerator generator = new TypeSafetyAttributeGenerator();
         var driver = CSharpGeneratorDriver.Create(
             generators: new[] { generator.AsSourceGenerator() },
-            parseOptions: (CSharpParseOptions)compilation.SyntaxTrees.Single().Options);
+            parseOptions: (CSharpParseOptions)compilation.SyntaxTrees.First().Options);
 
         driver.RunGeneratorsAndUpdateCompilation(
             compilation,
@@ -115,4 +157,35 @@ internal static class AnalyzerTestHost
             .Select(path => MetadataReference.CreateFromFile(path))
             .ToArray();
     }
+
+    private static string PrepareSourcePath(string sourcePath, string source, bool writePhysicalSource)
+    {
+        if (writePhysicalSource == false)
+            return sourcePath;
+
+        var physicalSourcePath = Path.IsPathRooted(sourcePath)
+            ? sourcePath
+            : Path.Combine(Path.GetTempPath(), "IvTem.TypeSafety.Tests", Guid.NewGuid().ToString("N"), sourcePath);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(physicalSourcePath) ?? Path.GetTempPath());
+        File.WriteAllText(physicalSourcePath, source);
+
+        return physicalSourcePath;
+    }
+}
+
+internal sealed class AnalyzerTestSource
+{
+    public AnalyzerTestSource(string source, string sourcePath = AnalyzerTestHost.DefaultSourcePath, bool writePhysicalSource = true)
+    {
+        Source = source;
+        SourcePath = sourcePath;
+        WritePhysicalSource = writePhysicalSource;
+    }
+
+    public string Source { get; }
+
+    public string SourcePath { get; }
+
+    public bool WritePhysicalSource { get; }
 }

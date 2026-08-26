@@ -4,7 +4,7 @@
     <AssemblyName>IvTem.TypeSafety</AssemblyName>
     <RootNamespace>IvTem.TypeSafety</RootNamespace>
     <PackageId>IvTem.TypeSafety</PackageId>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <Description>Compile-time generic type-safety restrictions for C#.</Description>
     <Title>IvTem.TypeSafety</Title>
     <IsPackable>true</IsPackable>

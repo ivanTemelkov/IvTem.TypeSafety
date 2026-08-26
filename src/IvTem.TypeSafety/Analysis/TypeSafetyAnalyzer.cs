@@ -67,6 +67,8 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         NamedTypeRestrictionPolicyProvider namedTypeRestrictionPolicyProvider)
     {
         var namedType = (INamedTypeSymbol)context.Symbol;
+        if (HasAnalyzableLocation(namedType) == false)
+            return;
 
         foreach (var typeParameter in namedType.TypeParameters)
             _ = extractor.Extract(typeParameter, context.ReportDiagnostic, context.CancellationToken);
@@ -80,6 +82,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeMethod(SymbolAnalysisContext context, DirectRestrictionPolicyExtractor extractor)
     {
         var method = (IMethodSymbol)context.Symbol;
+        if (HasAnalyzableLocation(method) == false)
+            return;
+
         if (method.MethodKind is MethodKind.PropertyGet or MethodKind.PropertySet or MethodKind.EventAdd or MethodKind.EventRemove or MethodKind.EventRaise)
             return;
 
@@ -92,6 +97,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         ConstructedTypeUseValidator constructedTypeUseValidator)
     {
         var genericName = (GenericNameSyntax)context.Node;
+        if (SourceFileLocationPolicy.IsAnalyzable(genericName.GetLocation()) == false)
+            return;
+
         if (IsAliasDeclaration(genericName))
             return;
 
@@ -111,6 +119,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         ConstructedTypeUseValidator constructedTypeUseValidator)
     {
+        if (SourceFileLocationPolicy.IsAnalyzable(context.Operation.Syntax.GetLocation()) == false)
+            return;
+
         if (context.Operation is IConversionOperation && HasAncestorOperation<IConversionOperation>(context.Operation.Parent))
             return;
 
@@ -136,6 +147,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         ConstructedTypeUseValidator constructedTypeUseValidator)
     {
+        if (SourceFileLocationPolicy.IsAnalyzable(context.Operation.Syntax.GetLocation()) == false)
+            return;
+
         var type = GetConstructedOperationType(context.Operation);
         if (type is null)
             return;
@@ -207,6 +221,9 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         => genericName.Ancestors()
             .OfType<UsingDirectiveSyntax>()
             .Any(usingDirective => usingDirective.Alias is not null);
+
+    private static bool HasAnalyzableLocation(ISymbol symbol)
+        => symbol.Locations.Any(SourceFileLocationPolicy.IsAnalyzable);
 
     private static bool HasAncestorOperation<TOperation>(IOperation? operation)
         where TOperation : IOperation

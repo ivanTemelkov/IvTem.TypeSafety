@@ -60,9 +60,13 @@ internal sealed class NamedTypeRestrictionPolicyProvider
             if (reportedCycles.TryAdd(cycleKey, 0) == false)
                 continue;
 
+            var location = GetDiagnosticLocation(orderedComponent);
+            if (SourceFileLocationPolicy.IsAnalyzable(location) == false)
+                continue;
+
             reportDiagnostic(Diagnostic.Create(
                 TypeSafetyDiagnosticDescriptors.CyclicContractPropagation,
-                GetDiagnosticLocation(orderedComponent),
+                location,
                 FormatCycleDisplay(orderedComponent)));
         }
     }
@@ -463,7 +467,7 @@ internal sealed class NamedTypeRestrictionPolicyProvider
     private static Location GetDiagnosticLocation(ImmutableArray<PropagationNode> component)
         => component
             .Select(GetTypeParameterLocation)
-            .Where(location => location != Location.None)
+            .Where(SourceFileLocationPolicy.IsAnalyzable)
             .OrderBy(GetLocationSortKey, StringComparer.Ordinal)
             .FirstOrDefault() ?? Location.None;
 
@@ -474,7 +478,7 @@ internal sealed class NamedTypeRestrictionPolicyProvider
 
         return node.TypeDefinition.TypeParameters[node.TypeParameterOrdinal]
             .Locations
-            .Where(location => location.IsInSource)
+            .Where(SourceFileLocationPolicy.IsAnalyzable)
             .OrderBy(GetLocationSortKey, StringComparer.Ordinal)
             .FirstOrDefault() ?? Location.None;
     }

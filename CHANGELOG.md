@@ -2,6 +2,11 @@
 
 All notable changes to `IvTem.TypeSafety` will be documented in this file.
 
+## 0.1.5
+
+- Limited analyzer reporting to source-backed project files with rooted paths, excluding generated source paths and generated-file naming conventions.
+- Ensured emitted `IVTS001`, `IVTS002`, `IVTS003`, and `IVTS005` diagnostics use source-backed locations.
+
 ## 0.1.4
 
 - Fixed `IVTS001` diagnostic locations so IDE navigation targets the source use-site and build output includes the consumer source file path.
