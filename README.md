@@ -6,14 +6,14 @@ This project is AI-assisted. Planning and implementation are assisted by OpenAI 
 
 ## Status
 
-The repository contains the `0.1.3` analyzer/source-generator package, package-content validation, NuGet/MSBuild transitive-enforcement integration tests, and a runnable sample.
+The repository contains the `0.1.4` analyzer/source-generator package, package-content validation, NuGet/MSBuild transitive-enforcement integration tests, and a runnable sample.
 
 ## Installation
 
 Install the package in projects that declare or consume restricted generic APIs:
 
 ```xml
-<PackageReference Include="IvTem.TypeSafety" Version="0.1.3" />
+<PackageReference Include="IvTem.TypeSafety" Version="0.1.4" />
 ```
 
 The package generates internal attributes into each consuming compilation:
@@ -64,7 +64,7 @@ All diagnostics are reported as errors:
 | `IVTS001` | A constructed generic type or method uses a forbidden type argument. |
 | `IVTS002` | A restriction attribute is configured with an invalid type list or unsupported forbidden type. |
 | `IVTS003` | Generic signature propagation contains an unsupported cycle. |
-| `IVTS004` | Reserved descriptor for contradictory restriction diagnostics; no current analyzer path emits it in `0.1.3`. |
+| `IVTS004` | Reserved descriptor for contradictory restriction diagnostics; no current analyzer path emits it in `0.1.4`. |
 | `IVTS005` | A current-source lookalike attribute uses the `IvTem.TypeSafety` metadata name but not the expected v1 shape. |
 
 See `docs/diagnostics.md` for examples and remediation guidance.
@@ -73,13 +73,13 @@ See `docs/diagnostics.md` for examples and remediation guidance.
 
 `IvTem.TypeSafety` is packaged as a Roslyn analyzer/source-generator package. The `.nupkg` places `IvTem.TypeSafety.dll` under `analyzers/dotnet/cs/netstandard2.0/` and intentionally does not include a runtime `lib/` assembly.
 
-The package also includes `README.md`, MIT license metadata, Git repository metadata, and a `.snupkg` symbol package. Version `0.1.1` aligned the analyzer DLL and PDB under the same package path so nuget.org can validate the symbols package. Version `0.1.2` lowers the Roslyn dependency baseline to support older .NET 8 development environments. Version `0.1.3` fixes false self-cycle diagnostics for generic types that mention their own constructed form in member signatures.
+The package also includes `README.md`, MIT license metadata, Git repository metadata, and a `.snupkg` symbol package. Version `0.1.1` aligned the analyzer DLL and PDB under the same package path so nuget.org can validate the symbols package. Version `0.1.2` lowers the Roslyn dependency baseline to support older .NET 8 development environments. Version `0.1.3` fixes false self-cycle diagnostics for generic types that mention their own constructed form in member signatures. Version `0.1.4` fixes source-backed diagnostic locations for IDE navigation.
 
 The package includes a `buildTransitive` props asset so downstream projects can receive the analyzer when `IvTem.TypeSafety` flows as a normal transitive package dependency. See `docs/limitations.md` for the precise tested boundary.
 
 ## Limitations
 
-Version `0.1.3` intentionally uses definite-only analysis. It does not analyze reflection-created generic types, XML documentation `cref` values, type alias declarations, method-body contract propagation, transformed generic mappings such as `Data<List<T>>`, or generic constraint chains such as `where T : U where U : Exception`.
+Version `0.1.4` intentionally uses definite-only analysis. It does not analyze reflection-created generic types, XML documentation `cref` values, type alias declarations, method-body contract propagation, transformed generic mappings such as `Data<List<T>>`, or generic constraint chains such as `where T : U where U : Exception`.
 
 See `docs/architecture.md` for the implementation model and `docs/limitations.md` for deferred scenarios.
 

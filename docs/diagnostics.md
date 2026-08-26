@@ -68,7 +68,7 @@ Cycles are rejected in v1 because the analyzer does not compute fixed-point rest
 Generic parameter '{0}' has a type-safety restriction that contradicts its direct constraints: {1}
 ```
 
-No current `0.1.3` analyzer path emits `IVTS004`. It remains reserved so the diagnostic ID does not need to change if contradictory direct-constraint validation is completed later.
+No current `0.1.4` analyzer path emits `IVTS004`. It remains reserved so the diagnostic ID does not need to change if contradictory direct-constraint validation is completed later.
 
 ## IVTS005 Malformed Type-Safety Attribute Metadata
 

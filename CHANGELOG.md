@@ -2,6 +2,11 @@
 
 All notable changes to `IvTem.TypeSafety` will be documented in this file.
 
+## 0.1.4
+
+- Fixed `IVTS001` diagnostic locations so IDE navigation targets the source use-site and build output includes the consumer source file path.
+- Added source-backed related locations for matched restriction declarations when available.
+
 ## 0.1.3
 
 - Fixed false `IVTS003` self-cycle diagnostics for generic types whose own member signatures return the same constructed generic type, such as factory methods returning `Envelope<T>` from inside `Envelope<T>`.

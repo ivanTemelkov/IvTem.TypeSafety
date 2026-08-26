@@ -13,12 +13,15 @@ namespace IvTem.TypeSafety.Tests.TestInfrastructure;
 
 internal static class AnalyzerTestHost
 {
+    public const string DefaultSourcePath = "Source.cs";
+
     public static ImmutableArray<Diagnostic> GetAnalyzerDiagnostics(
         string source,
         bool runGenerator = true,
-        IEnumerable<MetadataReference>? additionalReferences = null)
+        IEnumerable<MetadataReference>? additionalReferences = null,
+        string sourcePath = DefaultSourcePath)
     {
-        var compilation = CreateCompilation(source, additionalReferences: additionalReferences);
+        var compilation = CreateCompilation(source, additionalReferences: additionalReferences, sourcePath: sourcePath);
 
         if (runGenerator)
             compilation = RunGenerator(compilation);
@@ -59,10 +62,11 @@ internal static class AnalyzerTestHost
     private static CSharpCompilation CreateCompilation(
         string source,
         string assemblyName = "Consumer",
-        IEnumerable<MetadataReference>? additionalReferences = null)
+        IEnumerable<MetadataReference>? additionalReferences = null,
+        string sourcePath = DefaultSourcePath)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
-        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
+        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions, sourcePath);
         var references = GetReferences()
             .Concat(additionalReferences ?? Enumerable.Empty<MetadataReference>())
             .ToArray();

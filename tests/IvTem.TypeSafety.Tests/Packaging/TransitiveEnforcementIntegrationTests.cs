@@ -9,7 +9,7 @@ namespace IvTem.TypeSafety.Tests.Packaging;
 public sealed class TransitiveEnforcementIntegrationTests
 {
     private const string PackageId = "IvTem.TypeSafety";
-    private const string PackageVersion = "0.1.3";
+    private const string PackageVersion = "0.1.4";
 
     [Fact]
     public void DirectPackageReferenceEnforcesRestrictions()
@@ -28,7 +28,7 @@ public sealed class TransitiveEnforcementIntegrationTests
               </PropertyGroup>
 
               <ItemGroup>
-                <PackageReference Include="IvTem.TypeSafety" Version="0.1.3" />
+                <PackageReference Include="IvTem.TypeSafety" Version="0.1.4" />
               </ItemGroup>
             </Project>
             """,
@@ -52,6 +52,7 @@ public sealed class TransitiveEnforcementIntegrationTests
 
         Assert.False(result.Succeeded, result.Output);
         Assert.Contains("IVTS001", result.Output, StringComparison.Ordinal);
+        AssertDiagnosticOutputIncludesSourceFile(result.Output);
     }
 
     [Fact]
@@ -96,6 +97,7 @@ public sealed class TransitiveEnforcementIntegrationTests
 
         Assert.False(result.Succeeded, result.Output);
         Assert.Contains("IVTS001", result.Output, StringComparison.Ordinal);
+        AssertDiagnosticOutputIncludesSourceFile(result.Output);
     }
 
     [Fact]
@@ -140,7 +142,11 @@ public sealed class TransitiveEnforcementIntegrationTests
 
         Assert.False(result.Succeeded, result.Output);
         Assert.Contains("IVTS001", result.Output, StringComparison.Ordinal);
+        AssertDiagnosticOutputIncludesSourceFile(result.Output);
     }
+
+    private static void AssertDiagnosticOutputIncludesSourceFile(string output)
+        => Assert.Contains(Path.Combine("Consumer", "Source.cs"), output, StringComparison.Ordinal);
 
     private static DotNetCommand DotNet(params string[] arguments)
         => new(arguments);
@@ -205,7 +211,7 @@ public sealed class TransitiveEnforcementIntegrationTests
                   </PropertyGroup>
 
                   <ItemGroup>
-                    <PackageReference Include="IvTem.TypeSafety" Version="0.1.3" />
+                    <PackageReference Include="IvTem.TypeSafety" Version="0.1.4" />
                   </ItemGroup>
                 </Project>
                 """,

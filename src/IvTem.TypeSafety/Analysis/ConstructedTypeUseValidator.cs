@@ -108,12 +108,17 @@ internal sealed class ConstructedTypeUseValidator
                 continue;
 
             var location = GetTypeArgumentLocation(typeArgumentLocations, fallbackLocation, index);
+            if (location.IsInSource == false)
+                continue;
+
             if (diagnosticDeduplicator.TryMarkReported(location, index) == false)
                 continue;
 
             reportDiagnostic(Diagnostic.Create(
                 TypeSafetyDiagnosticDescriptors.ForbiddenGenericArgument,
                 location,
+                GetAdditionalLocations(matchedRestrictions),
+                properties: null,
                 actualType.ToDisplayString(TypeDisplayFormat),
                 policy.TypeParameter.Name,
                 originalDefinitionDisplayName,
@@ -121,13 +126,13 @@ internal sealed class ConstructedTypeUseValidator
         }
     }
 
-    private ImmutableArray<string> GetMatchedRestrictions(ITypeSymbol actualType, RestrictionPolicy policy)
+    private ImmutableArray<MatchedRestriction> GetMatchedRestrictions(ITypeSymbol actualType, RestrictionPolicy policy)
         => policy.DisallowAssignable
             .Where(forbiddenType => assignableTypeMatcher.Matches(actualType, forbiddenType.Type))
-            .Select(forbiddenType => FormatRestriction("DisallowTypes", forbiddenType))
+            .Select(forbiddenType => new MatchedRestriction(FormatRestriction("DisallowTypes", forbiddenType), forbiddenType.Location))
             .Concat(policy.DisallowExact
                 .Where(forbiddenType => exactTypeMatcher.Matches(actualType, forbiddenType.Type))
-                .Select(forbiddenType => FormatRestriction("DisallowExactTypes", forbiddenType)))
+                .Select(forbiddenType => new MatchedRestriction(FormatRestriction("DisallowExactTypes", forbiddenType), forbiddenType.Location)))
             .ToImmutableArray();
 
     private static Location GetTypeArgumentLocation(ImmutableArray<Location> typeArgumentLocations, Location fallbackLocation, int index)
@@ -157,6 +162,26 @@ internal sealed class ConstructedTypeUseValidator
     private static string FormatRestriction(string attributeName, ForbiddenType forbiddenType)
         => attributeName + "(" + forbiddenType.DisplayName + ")";
 
-    private static string FormatMatchedRestrictions(ImmutableArray<string> matchedRestrictions)
-        => string.Join(", ", matchedRestrictions);
+    private static ImmutableArray<Location> GetAdditionalLocations(ImmutableArray<MatchedRestriction> matchedRestrictions)
+        => matchedRestrictions
+            .Select(matchedRestriction => matchedRestriction.Location)
+            .Where(location => location.IsInSource)
+            .Distinct()
+            .ToImmutableArray();
+
+    private static string FormatMatchedRestrictions(ImmutableArray<MatchedRestriction> matchedRestrictions)
+        => string.Join(", ", matchedRestrictions.Select(matchedRestriction => matchedRestriction.DisplayText));
+
+    private sealed class MatchedRestriction
+    {
+        public MatchedRestriction(string displayText, Location location)
+        {
+            DisplayText = displayText;
+            Location = location;
+        }
+
+        public string DisplayText { get; }
+
+        public Location Location { get; }
+    }
 }
