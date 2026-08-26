@@ -1,0 +1,20 @@
+using System;
+using IvTem.TypeSafety;
+
+namespace IvTem.TypeSafety.Sample;
+
+internal sealed class InvalidExamples
+{
+    private OperationResult<InvalidOperationException>? AssignableViolation { get; set; } // IVTS001
+
+    private ExactPayload<string>? ExactViolation { get; set; } // IVTS001
+
+    public void MethodViolation()
+    {
+        Parser.Parse<InvalidOperationException>("bad"); // IVTS001
+    }
+}
+
+internal sealed class InvalidConfiguration<[DisallowTypes(typeof(object))] T>
+{
+} // IVTS002

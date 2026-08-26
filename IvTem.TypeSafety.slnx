@@ -5,4 +5,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/IvTem.TypeSafety.Tests/IvTem.TypeSafety.Tests.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj" />
+  </Folder>
 </Solution>

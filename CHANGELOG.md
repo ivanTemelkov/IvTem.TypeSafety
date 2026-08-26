@@ -11,3 +11,4 @@ All notable changes to `IvTem.TypeSafety` will be documented in this file.
 - Automated package-content validation for NuGet metadata, analyzer assets, README inclusion, and symbol package output.
 - `buildTransitive` package asset for tested downstream analyzer enforcement through normal project and package dependency flow.
 - Temporary-project integration tests for direct package, project-reference, and package-transitive enforcement.
+- User-facing README, architecture, diagnostics, limitations documentation, and runnable sample project.

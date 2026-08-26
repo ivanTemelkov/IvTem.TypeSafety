@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 14 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests.
-- Stop condition: Wait for explicit instruction before Task 15.
+- Phase: Task 15 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added.
+- Stop condition: Wait for explicit instruction before Task 16.
 
 ## Validation performed
 
@@ -62,6 +62,11 @@
 - Task 14: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 108 tests.
 - Task 14: Ran `dotnet pack IvTem.TypeSafety.slnx -c Release`; Release `.nupkg` and `.snupkg` artifacts were produced after elevated access to local SDK metadata under the user profile.
 - Task 14: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, `README.md`, and nuspec/package metadata with no `lib/` entries.
+- Task 15: Ran `dotnet build samples/IvTem.TypeSafety.Sample`; sample build succeeded with 0 warnings and 0 errors.
+- Task 15: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; solution build succeeded with 0 warnings and 0 errors after adding the sample project.
+- Task 15: Ran `dotnet test IvTem.TypeSafety.slnx --filter "FullyQualifiedName~DirectRestrictionPolicyExtractionTests|FullyQualifiedName~CycleDetectionTests"`; docs-sensitive diagnostic tests passed.
+- Task 15: Ran `dotnet test IvTem.TypeSafety.slnx --no-build`; full test suite passed with 108 tests.
+- Task 15: Ran manual path checks for README documentation links and sample references.
 
 ## Work completed
 
@@ -128,6 +133,12 @@
 - Task 14: Serialized package-build tests and isolated temporary NuGet global package folders to avoid Release pack races and stale local package cache reuse.
 - Task 14: Downgraded the Roslyn package reference from `5.9.0` to `5.6.0` because the packaged analyzer must load in the installed .NET SDK compiler used by real builds.
 - Task 14: Added `docs/architecture.md` and `docs/limitations.md` to document the tested NuGet/MSBuild enforcement boundary.
+- Task 15: Expanded README with visible AI-assisted/OpenAI Codex statement, installation, examples, diagnostics summary, limitations, and package transitivity notes.
+- Task 15: Expanded architecture documentation with generator/analyzer split, policy model, matching behavior, propagation, cycle handling, cross-assembly metadata, and NuGet/MSBuild flow.
+- Task 15: Added `docs/diagnostics.md` with documentation for `IVTS001` through `IVTS005`.
+- Task 15: Expanded limitations documentation with deferred analysis, configuration boundaries, cycle handling, and analyzer activation limits.
+- Task 15: Added `samples/IvTem.TypeSafety.Sample` with valid usage for both attributes and intentionally invalid examples in a non-compiled `.cs.txt` file.
+- Task 15: Added the sample project to `IvTem.TypeSafety.slnx`.
 
 ## Decisions made during planning
 
@@ -235,6 +246,12 @@
 - Added a `buildTransitive` props file rather than relying on NuGet analyzer assets alone, because transitive consumers need an imported MSBuild asset that explicitly adds the analyzer.
 - Treat normal package dependency flow as the supported transitive boundary; dependencies hidden with `PrivateAssets="all"` or equivalent asset exclusions are not claimed.
 - Kept Roslyn analyzer dependencies no newer than the SDK compiler version proven by integration tests to avoid `CS9057` analyzer load failures.
+
+## Decisions made during Task 15
+
+- Documented `IVTS004` as reserved because the descriptor exists but no current analyzer path emits it.
+- Kept invalid sample examples in `InvalidExamples.cs.txt` so the sample remains runnable and CI-safe.
+- Referenced the local analyzer project as an analyzer in the sample rather than consuming a packed local NuGet package, keeping sample validation independent from Release pack output.
 
 ## Unresolved issues
 
