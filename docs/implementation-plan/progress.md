@@ -5,6 +5,7 @@
 - Phase: Task 17 completed.
 - Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed.
 - Stop condition: Task 17 is complete. Wait for explicit release, commit, or follow-up instruction.
+- Post-task release support: A manually triggered nuget.org Trusted Publishing workflow has been added; publishing still requires a matching nuget.org policy and GitHub environment configuration.
 
 ## Validation performed
 
@@ -89,6 +90,11 @@
 - Task 17: Reran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
 - Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, and `README.md`, with no `lib/` entries.
 - Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb`, with no `lib/` entries.
+- Post-task release support: Inspected `.github/workflows/publish-nuget.yml` for obvious YAML and command issues.
+- Post-task release support: Replaced the long-lived `NUGET_API_KEY` secret path with NuGet Trusted Publishing through `NuGet/login@v1` and GitHub OIDC.
+- Post-task release support: Ran `python -c "import yaml, pathlib; yaml.safe_load(pathlib.Path('.github/workflows/publish-nuget.yml').read_text()); print('YAML parsed')"`; the workflow YAML parsed successfully.
+- Post-task release support: Ran `dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:Version` outside the sandbox after the known SDK metadata access issue; it returned `0.1.0`.
+- Post-task release support: Ran `dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:TargetFramework` outside the sandbox after the known SDK metadata access issue; it returned `netstandard2.0`.
 
 ## Work completed
 
@@ -168,6 +174,7 @@
 - Task 17: Moved the `0.1.0` diagnostic catalog from unshipped to shipped release tracking, preserving `IVTS004` as a reserved descriptor.
 - Task 17: Updated the changelog with broad use-site coverage and solution-level pack stabilization.
 - Task 17: Updated the decision log with release-candidate stabilization decisions.
+- Post-task release support: Added `.github/workflows/publish-nuget.yml` for manually triggered nuget.org Trusted Publishing.
 
 ## Decisions made during planning
 
@@ -294,6 +301,13 @@
 - Treated `IVTS001`, `IVTS002`, `IVTS003`, and `IVTS005` as the emitted `0.1.0` diagnostic set, while keeping `IVTS004` in the shipped catalog as a reserved non-emitted descriptor.
 - Kept the sample project in the solution but marked it non-packable, because the repository-level `dotnet pack -c Release` command should produce the analyzer package without trying to package runnable examples.
 - Did not add late analyzer behavior or a new performance benchmark during stabilization; the release candidate relies on the existing 108-test suite, compilation-start analyzer state, and documented unsupported scenarios.
+
+## Decisions made during NuGet publish workflow
+
+- Kept publishing separate from CI so normal `push` and `pull_request` workflows continue to build, test, pack, and upload artifacts without publishing.
+- Required manual `package_version` input to match the project `Version`, required the workflow to run from `main`, and used the `nuget.org` GitHub environment as an optional approval gate.
+- Required manual `nuget_user` input for the nuget.org profile name and used `NuGet/login@v1` with `id-token: write` to exchange GitHub OIDC for a temporary NuGet publish token.
+- Published the `.nupkg` from the package output directory so the colocated `.snupkg` can be discovered and uploaded by NuGet, using `--skip-duplicate` for rerun tolerance.
 
 ## Unresolved issues
 

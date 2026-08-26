@@ -1,0 +1,79 @@
+name: Publish NuGet Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: Package version to publish. Must match src/IvTem.TypeSafety/IvTem.TypeSafety.csproj.
+        required: true
+        type: string
+      nuget_user:
+        description: nuget.org username/profile name for Trusted Publishing. Do not use an email address.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-nuget-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to nuget.org
+    runs-on: ubuntu-latest
+    environment: nuget.org
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Require main branch
+        run: test "$GITHUB_REF" = "refs/heads/main"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            8.0.x
+
+      - name: Verify package version
+        run: |
+          project_version="$(dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:Version)"
+          test "$project_version" = "${{ inputs.package_version }}"
+
+      - name: Restore
+        run: dotnet restore IvTem.TypeSafety.slnx
+
+      - name: Build
+        run: dotnet build IvTem.TypeSafety.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test IvTem.TypeSafety.slnx -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Pack
+        run: dotnet pack src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -c Release --no-restore --output artifacts/package
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package-${{ inputs.package_version }}
+          path: artifacts/package/*
+          if-no-files-found: error
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ inputs.nuget_user }}
+
+      - name: Publish package
+        working-directory: artifacts/package
+        run: dotnet nuget push "*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
