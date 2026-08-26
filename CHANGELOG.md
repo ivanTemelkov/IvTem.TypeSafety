@@ -2,6 +2,10 @@
 
 All notable changes to `IvTem.TypeSafety` will be documented in this file.
 
+## 0.1.3
+
+- Fixed false `IVTS003` self-cycle diagnostics for generic types whose own member signatures return the same constructed generic type, such as factory methods returning `Envelope<T>` from inside `Envelope<T>`.
+
 ## 0.1.2
 
 - Lowered the Roslyn dependency baseline from `Microsoft.CodeAnalysis.CSharp` `5.6.0` to `4.8.0` so the analyzer can load in older .NET 8 development environments.

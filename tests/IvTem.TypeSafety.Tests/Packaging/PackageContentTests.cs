@@ -14,7 +14,7 @@ namespace IvTem.TypeSafety.Tests.Packaging;
 public sealed class PackageContentTests
 {
     private const string PackageId = "IvTem.TypeSafety";
-    private const string PackageVersion = "0.1.2";
+    private const string PackageVersion = "0.1.3";
 
     [Fact]
     public void PackageContainsAnalyzerAssetsOnly()
