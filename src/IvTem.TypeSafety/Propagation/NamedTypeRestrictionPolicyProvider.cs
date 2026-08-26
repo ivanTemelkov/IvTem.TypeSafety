@@ -144,6 +144,9 @@ internal sealed class NamedTypeRestrictionPolicyProvider
             if (SymbolEqualityComparer.Default.Equals(targetTypeParameter.ContainingSymbol, targetBuilders[targetTypeParameter.Ordinal].TypeParameter.ContainingSymbol) == false)
                 continue;
 
+            if (IsIdentitySelfMapping(sourceType, sourceIndex, targetTypeParameter))
+                continue;
+
             targetBuilders[targetTypeParameter.Ordinal].Add(sourcePolicies[sourceIndex]);
         }
     }
@@ -309,9 +312,19 @@ internal sealed class NamedTypeRestrictionPolicyProvider
             if (SymbolEqualityComparer.Default.Equals(targetTypeParameter.ContainingSymbol, targetNode.TypeDefinition) == false)
                 continue;
 
+            if (IsIdentitySelfMapping(sourceType, sourceIndex, targetTypeParameter))
+                continue;
+
             yield return new PropagationNode(sourceType.OriginalDefinition, sourceIndex);
         }
     }
+
+    private static bool IsIdentitySelfMapping(
+        INamedTypeSymbol sourceType,
+        int sourceTypeArgumentIndex,
+        ITypeParameterSymbol targetTypeParameter)
+        => targetTypeParameter.Ordinal == sourceTypeArgumentIndex
+            && SymbolEqualityComparer.Default.Equals(sourceType.OriginalDefinition, targetTypeParameter.ContainingSymbol);
 
     private static IEnumerable<PropagationNode> CreateTypeParameterNodes(INamedTypeSymbol typeDefinition)
     {

@@ -103,6 +103,91 @@ internal sealed class Node
     }
 
     [Fact]
+    public void ConstructorOnGenericResultTypeDoesNotReportSelfCycle()
+    {
+        var diagnostics = AnalyzerTestHost.GetAnalyzerDiagnostics("""
+using System.Diagnostics.CodeAnalysis;
+using IvTem.TypeSafety;
+
+public static class Result
+{
+    public static Result<T> Success<[DisallowTypes(typeof(System.Exception))] T>([NotNull] T data) => new Result<T>(data);
+}
+
+public sealed class Result<T>
+{
+    public T Data { get; set; }
+
+    internal Result([NotNull] T data)
+    {
+        Data = data;
+    }
+}
+""");
+
+        Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Id == "IVTS003"));
+    }
+
+    [Fact]
+    public void SelfReturningGenericResultMethodsDoNotReportSelfCycle()
+    {
+        var diagnostics = AnalyzerTestHost.GetAnalyzerDiagnostics("""
+using System.Diagnostics.CodeAnalysis;
+using IvTem.TypeSafety;
+
+namespace Demo.Results;
+
+public static class Outcome
+{
+    public static Outcome<T> Failed<[DisallowTypes(typeof(System.Exception))] T>([NotNull] System.Exception error) where T : notnull
+    {
+        System.ArgumentNullException.ThrowIfNull(error);
+        return Outcome<T>.Failed(error);
+    }
+
+    public static Outcome<T> Success<[DisallowTypes(typeof(System.Exception))] T>([NotNull] T value) where T : notnull
+        => new(value);
+}
+
+public sealed class Outcome<T> where T : notnull
+{
+    private System.Exception? Error { get; init; }
+
+    private T? Value { get; }
+
+    private Outcome()
+    {
+    }
+
+    public Outcome([NotNull] T value)
+        => Value = value;
+
+    internal static Outcome<T> Failed([NotNull] System.Exception error)
+        => new()
+        {
+            Error = error
+        };
+
+    public bool TryGetValue([NotNullWhen(returnValue: true)] out T? value)
+    {
+        value = default;
+
+        if (Error is not null)
+            return false;
+
+        if (Value is null)
+            return false;
+
+        value = Value;
+        return true;
+    }
+}
+""");
+
+        Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Id == "IVTS003"));
+    }
+
+    [Fact]
     public void CycleDoesNotOverflowAnalyzer()
     {
         var diagnostics = AnalyzerTestHost.GetAnalyzerDiagnostics("""

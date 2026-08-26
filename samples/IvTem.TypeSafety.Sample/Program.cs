@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using IvTem.TypeSafety;
 
 namespace IvTem.TypeSafety.Sample;
@@ -8,6 +9,8 @@ internal static class Program
     private static void Main()
     {
         var result = new OperationResult<string>("completed");
+        var envelope = MessageEnvelope.CreateValue("factory-completed");
+        var errorEnvelope = MessageEnvelope.CreateError<string>(new InvalidOperationException("factory-failed"));
         var payload = new ExactPayload<object>(new object());
         var repository = new CustomerRepository();
         var parser = new Parser();
@@ -18,6 +21,8 @@ internal static class Program
         parser.ConvertLocal<string>("local");
 
         Console.WriteLine(result.Value);
+        Console.WriteLine(envelope.Payload);
+        Console.WriteLine(errorEnvelope.HasValue());
         Console.WriteLine(payload.Value.GetType().Name);
         Console.WriteLine(factory().GetType().Name);
     }
@@ -31,6 +36,57 @@ internal sealed class OperationResult<[DisallowTypes(typeof(Exception))] T>
     }
 
     public T Value { get; }
+}
+
+internal static class MessageEnvelope
+{
+    public static MessageEnvelope<T> CreateError<[DisallowTypes(typeof(Exception))] T>([NotNull] Exception error)
+        where T : notnull
+    {
+        ArgumentNullException.ThrowIfNull(error);
+
+        return MessageEnvelope<T>.CreateError(error);
+    }
+
+    public static MessageEnvelope<T> CreateValue<[DisallowTypes(typeof(Exception))] T>([NotNull] T payload)
+        where T : notnull
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+
+        return new(payload);
+    }
+}
+
+internal sealed class MessageEnvelope<T>
+    where T : notnull
+{
+    private Exception? Error { get; init; }
+
+    private MessageEnvelope()
+    {
+    }
+
+    internal MessageEnvelope([NotNull] T payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+
+        Payload = payload;
+    }
+
+    public T? Payload { get; set; }
+
+    internal static MessageEnvelope<T> CreateError([NotNull] Exception error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+
+        return new()
+        {
+            Error = error
+        };
+    }
+
+    public bool HasValue()
+        => Error is null;
 }
 
 internal readonly struct Customer
