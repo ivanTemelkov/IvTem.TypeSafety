@@ -14,7 +14,7 @@ namespace IvTem.TypeSafety.Tests.Packaging;
 public sealed class PackageContentTests
 {
     private const string PackageId = "IvTem.TypeSafety";
-    private const string PackageVersion = "0.1.0";
+    private const string PackageVersion = "0.1.1";
 
     [Fact]
     public void PackageContainsAnalyzerAssetsOnly()
@@ -31,10 +31,11 @@ public sealed class PackageContentTests
 
         Assert.DoesNotContain(packageEntries, entry => entry.StartsWith("lib/", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(symbolEntries, entry => entry.StartsWith("lib/", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains("analyzers/dotnet/cs/IvTem.TypeSafety.dll", packageEntries);
+        Assert.Contains("analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll", packageEntries);
         Assert.Contains("buildTransitive/IvTem.TypeSafety.props", packageEntries);
         Assert.Contains("README.md", packageEntries);
         Assert.Contains("analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb", symbolEntries);
+        AssertSymbolPackagePdbsMatchPackageDlls(packageEntries, symbolEntries);
         Assert.Contains("raw.githubusercontent.com", sourceLinkContent, StringComparison.Ordinal);
 
         Assert.Equal(PackageId, ReadMetadataValue(nuspec, "id"));
@@ -98,6 +99,22 @@ public sealed class PackageContentTests
         return archive.Entries
             .Select(entry => entry.FullName)
             .ToArray();
+    }
+
+    private static void AssertSymbolPackagePdbsMatchPackageDlls(
+        IReadOnlyCollection<string> packageEntries,
+        IReadOnlyCollection<string> symbolEntries)
+    {
+        var packageDllEntries = new HashSet<string>(
+            packageEntries.Where(entry => entry.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (string symbolEntry in symbolEntries.Where(entry => entry.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)))
+        {
+            string expectedDllEntry = Path.ChangeExtension(symbolEntry, ".dll").Replace('\\', '/');
+
+            Assert.Contains(expectedDllEntry, packageDllEntries);
+        }
     }
 
     private static XDocument ReadNuspec(string packagePath)

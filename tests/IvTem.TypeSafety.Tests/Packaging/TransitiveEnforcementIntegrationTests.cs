@@ -9,7 +9,7 @@ namespace IvTem.TypeSafety.Tests.Packaging;
 public sealed class TransitiveEnforcementIntegrationTests
 {
     private const string PackageId = "IvTem.TypeSafety";
-    private const string PackageVersion = "0.1.0";
+    private const string PackageVersion = "0.1.1";
 
     [Fact]
     public void DirectPackageReferenceEnforcesRestrictions()
@@ -28,7 +28,7 @@ public sealed class TransitiveEnforcementIntegrationTests
               </PropertyGroup>
 
               <ItemGroup>
-                <PackageReference Include="IvTem.TypeSafety" Version="0.1.0" />
+                <PackageReference Include="IvTem.TypeSafety" Version="0.1.1" />
               </ItemGroup>
             </Project>
             """,
@@ -205,7 +205,7 @@ public sealed class TransitiveEnforcementIntegrationTests
                   </PropertyGroup>
 
                   <ItemGroup>
-                    <PackageReference Include="IvTem.TypeSafety" Version="0.1.0" />
+                    <PackageReference Include="IvTem.TypeSafety" Version="0.1.1" />
                   </ItemGroup>
                 </Project>
                 """,

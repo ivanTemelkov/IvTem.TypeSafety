@@ -2,6 +2,11 @@
 
 All notable changes to `IvTem.TypeSafety` will be documented in this file.
 
+## 0.1.1
+
+- Fixed the NuGet symbol package layout by placing the analyzer DLL under `analyzers/dotnet/cs/netstandard2.0/`, matching the `.snupkg` PDB path required by nuget.org validation.
+- Updated the `buildTransitive` analyzer reference and package-content validation for the corrected analyzer asset path.
+
 ## 0.1.0
 
 - Initial repository scaffolding.

@@ -297,12 +297,12 @@ Cross-language metadata:
 NuGet goals:
 
 - Package ID: `IvTem.TypeSafety`.
-- Version: `0.1.0`.
+- Version: `0.1.1`.
 - Authors: `Ivan Temelkov`.
 - License: MIT.
 - Repository URL from Git remote: `https://github.com/ivanTemelkov/IvTem.TypeSafety`.
 - No `lib/` runtime assembly.
-- Analyzer/generator asset under `analyzers/dotnet/cs/`.
+- Analyzer/generator asset under `analyzers/dotnet/cs/netstandard2.0/`.
 - README embedded as package README.
 - Symbol package `.snupkg`.
 - Deterministic builds and Source Link.
@@ -483,7 +483,7 @@ Required docs:
 - `docs/architecture.md`: generator/analyzer split, policy model, propagation graph, cycle handling.
 - `docs/diagnostics.md`: complete diagnostic catalog and examples.
 - `docs/limitations.md`: deferred v1 features.
-- `CHANGELOG.md`: 0.1.0 initial release notes.
+- `CHANGELOG.md`: 0.1.0 initial release notes and 0.1.1 symbol-package layout fix.
 - `AnalyzerReleases.Shipped.md` and `AnalyzerReleases.Unshipped.md`.
 - `docs/implementation-plan/progress.md`: task status, validation, decisions, lessons, unresolved issues, deferred features.
 - `docs/implementation-plan/decisions.md`: architectural decisions and approval state.
@@ -713,7 +713,7 @@ Questions requiring approval before implementation:
 - Affected files: all touched files.
 - Approach: Run full validation, inspect package, update progress/lessons/deferred docs.
 - Tests required: full test suite and package validation.
-- Acceptance criteria: release candidate for `0.1.0`.
+- Acceptance criteria: release candidate for `0.1.1`.
 - Dependencies: all prior tasks.
 - Risks/open questions: late behavior changes may require diagnostic catalog review.
 

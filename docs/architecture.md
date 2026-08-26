@@ -64,7 +64,7 @@ Malformed lookalike attributes in current source can produce `IVTS005`; metadata
 
 The package contains:
 
-- `analyzers/dotnet/cs/IvTem.TypeSafety.dll`
+- `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`
 - `buildTransitive/IvTem.TypeSafety.props`
 
 NuGet activates analyzer assets for direct package references. The `buildTransitive` props file also adds the same analyzer assembly for downstream projects that receive `IvTem.TypeSafety` transitively through normal package dependency flow.

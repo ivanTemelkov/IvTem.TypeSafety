@@ -77,3 +77,9 @@ No implementation decisions have been formally approved yet.
 - Decision: Treat the implemented diagnostic catalog `IVTS001` through `IVTS005` as the `0.1.0` shipped catalog, with `IVTS004` reserved but listed so future analyzer changes do not reuse the ID.
 - Decision: Keep the runnable sample in the solution but mark it non-packable so solution-level `dotnet pack -c Release` produces only the analyzer/source-generator package.
 - Decision: Do not add late behavior or performance rewrites during stabilization; document remaining unsupported scenarios and rely on the current compilation-start caches plus 108-test validation for the v0.1.0 release candidate.
+
+### v0.1.1 symbol package layout fix
+
+- Status: Implemented pending human release approval.
+- Decision: Publish `0.1.1` because `0.1.0` was already published before nuget.org rejected the symbols package, and published NuGet package contents are immutable.
+- Decision: Keep analyzer behavior unchanged and move the analyzer DLL package entry to `analyzers/dotnet/cs/netstandard2.0/` so it matches the generated `.snupkg` PDB path.

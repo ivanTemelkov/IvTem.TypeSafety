@@ -3,7 +3,7 @@
 ## Current status
 
 - Phase: Task 17 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed; v0.1.1 is prepared as a symbol-package layout fix after v0.1.0 was already published.
 - Stop condition: Task 17 is complete. Wait for explicit release, commit, or follow-up instruction.
 - Post-task release support: A manually triggered nuget.org Trusted Publishing workflow has been added; publishing still requires a matching nuget.org policy and GitHub environment configuration.
 
@@ -55,14 +55,14 @@
 - Task 13: Ran `dotnet test IvTem.TypeSafety.slnx --filter PackageContentTests`; 1 package-content validation test passed.
 - Task 13: Ran `dotnet build IvTem.TypeSafety.slnx -c Release`; build succeeded with 0 warnings and 0 errors.
 - Task 13: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 105 tests.
-- Task 13: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `README.md`, and nuspec/package metadata with no `lib/` entries.
+- Task 13: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`, `README.md`, and nuspec/package metadata with no `lib/` entries.
 - Task 13: Inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` with no `lib/` entries.
 - Task 14: Ran `dotnet restore IvTem.TypeSafety.slnx`; restore succeeded after elevated access to local SDK metadata under the user profile.
 - Task 14: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; build succeeded with 0 warnings and 0 errors after aligning Roslyn package references to the SDK compiler.
 - Task 14: Ran `dotnet test IvTem.TypeSafety.slnx --filter "FullyQualifiedName~Packaging"`; 4 packaging/transitive integration tests passed.
 - Task 14: Ran `dotnet test IvTem.TypeSafety.slnx`; full test suite passed with 108 tests.
 - Task 14: Ran `dotnet pack IvTem.TypeSafety.slnx -c Release`; Release `.nupkg` and `.snupkg` artifacts were produced after elevated access to local SDK metadata under the user profile.
-- Task 14: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, `README.md`, and nuspec/package metadata with no `lib/` entries.
+- Task 14: Inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, `README.md`, and nuspec/package metadata with no `lib/` entries.
 - Task 15: Ran `dotnet build samples/IvTem.TypeSafety.Sample`; sample build succeeded with 0 warnings and 0 errors.
 - Task 15: Ran `dotnet build IvTem.TypeSafety.slnx --no-restore`; solution build succeeded with 0 warnings and 0 errors after adding the sample project.
 - Task 15: Ran `dotnet test IvTem.TypeSafety.slnx --filter "FullyQualifiedName~DirectRestrictionPolicyExtractionTests|FullyQualifiedName~CycleDetectionTests"`; docs-sensitive diagnostic tests passed.
@@ -88,13 +88,22 @@
 - Task 17: Reran `dotnet pack -c Release`; solution-level Release pack succeeded and produced the analyzer package.
 - Task 17: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter PackageContentTests`; package-content validation passed with 1 test.
 - Task 17: Reran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
-- Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, and `README.md`, with no `lib/` entries.
+- Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, and `README.md`, with no `lib/` entries.
 - Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb`, with no `lib/` entries.
 - Post-task release support: Inspected `.github/workflows/publish-nuget.yml` for obvious YAML and command issues.
 - Post-task release support: Replaced the long-lived `NUGET_API_KEY` secret path with NuGet Trusted Publishing through `NuGet/login@v1` and GitHub OIDC.
 - Post-task release support: Ran `python -c "import yaml, pathlib; yaml.safe_load(pathlib.Path('.github/workflows/publish-nuget.yml').read_text()); print('YAML parsed')"`; the workflow YAML parsed successfully.
-- Post-task release support: Ran `dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:Version` outside the sandbox after the known SDK metadata access issue; it returned `0.1.0`.
+- Post-task release support: Ran `dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:Version` outside the sandbox after the known SDK metadata access issue; it returned `0.1.1`.
 - Post-task release support: Ran `dotnet msbuild src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -getProperty:TargetFramework` outside the sandbox after the known SDK metadata access issue; it returned `netstandard2.0`.
+- Post-task release support: Updated package layout after nuget.org rejected the symbols package because its PDB path did not match a corresponding DLL path in the main package.
+- Post-task release support: Ran `dotnet pack src\IvTem.TypeSafety\IvTem.TypeSafety.csproj -c Release --no-restore`; package creation succeeded with matching `.nupkg` and `.snupkg` analyzer paths.
+- Post-task release support: Inspected `IvTem.TypeSafety.0.1.1.nupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`.
+- Post-task release support: Inspected `IvTem.TypeSafety.0.1.1.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb`.
+- Post-task release support: Ran `dotnet build IvTem.TypeSafety.slnx -c Release --no-restore`; Release build succeeded with 0 warnings and 0 errors.
+- Post-task release support: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter PackageContentTests`; package-content validation passed with 1 test.
+- Post-task release support: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter "FullyQualifiedName~Packaging"`; packaging/transitive validation passed with 4 tests.
+- Post-task release support: Bumped package metadata, README installation guidance, package tests, publish workflow default, and release notes from `0.1.0` to `0.1.1`.
+- Post-task release support: Created `IvTem.TypeSafety.0.1.1.nupkg` and `IvTem.TypeSafety.0.1.1.snupkg` with matching analyzer DLL/PDB paths under `analyzers/dotnet/cs/netstandard2.0/`.
 
 ## Work completed
 
@@ -175,6 +184,9 @@
 - Task 17: Updated the changelog with broad use-site coverage and solution-level pack stabilization.
 - Task 17: Updated the decision log with release-candidate stabilization decisions.
 - Post-task release support: Added `.github/workflows/publish-nuget.yml` for manually triggered nuget.org Trusted Publishing.
+- Post-task release support: Moved the analyzer DLL package entry to `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`, matching the generated `.snupkg` PDB path, and updated `buildTransitive/IvTem.TypeSafety.props`.
+- Post-task release support: Strengthened `PackageContentTests` so each `.snupkg` PDB must map to a DLL at the same path in the main `.nupkg`.
+- Post-task release support: Added `0.1.1` changelog and release-decision documentation for the nuget.org symbol package validation fix.
 
 ## Decisions made during planning
 
@@ -273,9 +285,9 @@
 ## Decisions made during Task 13
 
 - Kept `IncludeBuildOutput=true` only to let NuGet produce `.snupkg` symbols, then removed collected runtime build output before packaging so the main `.nupkg` has no `lib/` assembly.
-- Added the analyzer DLL as explicit TFM-specific package content at `analyzers/dotnet/cs/IvTem.TypeSafety.dll` to avoid NuGet inserting `netstandard2.0` under the analyzer path in the main package.
+- Added the analyzer DLL as explicit TFM-specific package content at `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll` so the main package DLL path matches NuGet's generated `.snupkg` PDB path.
 - Scoped `NU5128` suppression to the analyzer project because the no-`lib/` package shape is intentional for analyzer/source-generator distribution and is covered by package-content tests.
-- Accepted NuGet's deterministic symbol package path `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` while requiring no `lib/` entries in the `.snupkg`.
+- Required NuGet's deterministic symbol package path `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb` to have a matching DLL path in the main `.nupkg`, while requiring no `lib/` entries in the `.snupkg`.
 
 ## Decisions made during Task 14
 
@@ -308,6 +320,7 @@
 - Required manual `package_version` input to match the project `Version`, required the workflow to run from `main`, and used the `nuget.org` GitHub environment as an optional approval gate.
 - Required manual `nuget_user` input for the nuget.org profile name and used `NuGet/login@v1` with `id-token: write` to exchange GitHub OIDC for a temporary NuGet publish token.
 - Published the `.nupkg` from the package output directory so the colocated `.snupkg` can be discovered and uploaded by NuGet, using `--skip-duplicate` for rerun tolerance.
+- If a `.nupkg` version has already been published to nuget.org with the old analyzer DLL path, the source fix applies to the next package version because nuget.org package contents are immutable.
 
 ## Unresolved issues
 
