@@ -10,6 +10,7 @@ on:
       nuget_user:
         description: nuget.org username/profile name for Trusted Publishing. Do not use an email address.
         required: true
+        default: ivanTemelkov
         type: string
 
 permissions:
