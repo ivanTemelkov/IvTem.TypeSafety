@@ -3,7 +3,7 @@
 ## Current status
 
 - Phase: Task 17 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed; v0.1.1 is prepared as a symbol-package layout fix after v0.1.0 was already published.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed; v0.1.2 is prepared as a symbol-package layout and Roslyn 4.8 compatibility fix after v0.1.0 was already published.
 - Stop condition: Task 17 is complete. Wait for explicit release, commit, or follow-up instruction.
 - Post-task release support: A manually triggered nuget.org Trusted Publishing workflow has been added; publishing still requires a matching nuget.org policy and GitHub environment configuration.
 
@@ -104,6 +104,14 @@
 - Post-task release support: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter "FullyQualifiedName~Packaging"`; packaging/transitive validation passed with 4 tests.
 - Post-task release support: Bumped package metadata, README installation guidance, package tests, publish workflow default, and release notes from `0.1.0` to `0.1.1`.
 - Post-task release support: Created `IvTem.TypeSafety.0.1.1.nupkg` and `IvTem.TypeSafety.0.1.1.snupkg` with matching analyzer DLL/PDB paths under `analyzers/dotnet/cs/netstandard2.0/`.
+- Post-task release support: Lowered `Microsoft.CodeAnalysis.CSharp` from `5.6.0` to `4.8.0` for older .NET 8 compiler compatibility.
+- Post-task release support: Removed Roslyn collection-expression operation analysis because `OperationKind.CollectionExpression` and `ICollectionExpressionOperation` are unavailable in Roslyn `4.8.0`.
+- Post-task release support: Ran `dotnet restore IvTem.TypeSafety.slnx` outside the sandbox after the known SDK metadata access issue; restore succeeded with Roslyn `4.8.0`.
+- Post-task release support: Ran `dotnet build IvTem.TypeSafety.slnx -c Release --no-restore`; Release build succeeded with 0 warnings and 0 errors.
+- Post-task release support: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build`; full Release test suite passed with 108 tests.
+- Post-task release support: Ran `dotnet pack src\IvTem.TypeSafety\IvTem.TypeSafety.csproj -c Release --no-restore`; `IvTem.TypeSafety.0.1.2.nupkg` and `IvTem.TypeSafety.0.1.2.snupkg` were produced.
+- Post-task release support: Inspected `IvTem.TypeSafety.0.1.2.nupkg` and `.snupkg`; analyzer DLL and PDB paths match under `analyzers/dotnet/cs/netstandard2.0/`.
+- Post-task release support: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter "FullyQualifiedName~Packaging"`; packaging/transitive validation passed with 4 tests.
 
 ## Work completed
 
@@ -187,6 +195,7 @@
 - Post-task release support: Moved the analyzer DLL package entry to `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.dll`, matching the generated `.snupkg` PDB path, and updated `buildTransitive/IvTem.TypeSafety.props`.
 - Post-task release support: Strengthened `PackageContentTests` so each `.snupkg` PDB must map to a DLL at the same path in the main `.nupkg`.
 - Post-task release support: Added `0.1.1` changelog and release-decision documentation for the nuget.org symbol package validation fix.
+- Post-task release support: Prepared `0.1.2` with Roslyn `4.8.0`, updated release documentation, and adjusted tests for the older Roslyn API surface.
 
 ## Decisions made during planning
 

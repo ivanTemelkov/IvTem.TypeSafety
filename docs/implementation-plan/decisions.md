@@ -83,3 +83,9 @@ No implementation decisions have been formally approved yet.
 - Status: Implemented pending human release approval.
 - Decision: Publish `0.1.1` because `0.1.0` was already published before nuget.org rejected the symbols package, and published NuGet package contents are immutable.
 - Decision: Keep analyzer behavior unchanged and move the analyzer DLL package entry to `analyzers/dotnet/cs/netstandard2.0/` so it matches the generated `.snupkg` PDB path.
+
+### v0.1.2 Roslyn 4.8 compatibility baseline
+
+- Status: Implemented pending human release approval.
+- Decision: Publish `0.1.2` with `Microsoft.CodeAnalysis.CSharp` `4.8.0` so older .NET 8 development environments can load the analyzer without `CS9057`.
+- Decision: Drop target-typed collection-expression operation analysis for this baseline because Roslyn `4.8.0` does not expose `ICollectionExpressionOperation` or `OperationKind.CollectionExpression`.

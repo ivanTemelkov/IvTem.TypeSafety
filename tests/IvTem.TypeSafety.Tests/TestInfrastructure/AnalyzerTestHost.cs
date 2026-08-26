@@ -61,7 +61,7 @@ internal static class AnalyzerTestHost
         string assemblyName = "Consumer",
         IEnumerable<MetadataReference>? additionalReferences = null)
     {
-        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14);
+        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
         var references = GetReferences()
             .Concat(additionalReferences ?? Enumerable.Empty<MetadataReference>())

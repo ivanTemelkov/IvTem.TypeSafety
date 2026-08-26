@@ -53,12 +53,10 @@ internal static class TypeSafetyDiagnosticDescriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly ImmutableArray<DiagnosticDescriptor> All =
-    [
+    public static readonly ImmutableArray<DiagnosticDescriptor> All = ImmutableArray.Create(
         ForbiddenGenericArgument,
         InvalidConfiguration,
         CyclicContractPropagation,
         ContradictoryRestriction,
-        MalformedAttributeMetadata
-    ];
+        MalformedAttributeMetadata);
 }

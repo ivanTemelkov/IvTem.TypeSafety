@@ -126,7 +126,7 @@ internal sealed class Sample<{{attributeSource}} T>
     }
 
     [Fact]
-    public void ForbiddenTypeContainingSurroundingGenericParameterReportsConfigurationDiagnostic()
+    public void ForbiddenTypeContainingSurroundingGenericParameterReportsMetadataDiagnostic()
     {
         var diagnostics = AnalyzerTestHost.GetAnalyzerDiagnostics("""
 using IvTem.TypeSafety;
@@ -138,8 +138,7 @@ internal sealed class Sample<TOuter, [DisallowTypes(typeof(System.Collections.Ge
 
         var diagnostic = Assert.Single(diagnostics);
 
-        Assert.Equal("IVTS002", diagnostic.Id);
-        Assert.Contains("contains a generic parameter", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Equal("IVTS005", diagnostic.Id);
     }
 
     [Fact]

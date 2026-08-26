@@ -2,6 +2,10 @@
 
 All notable changes to `IvTem.TypeSafety` will be documented in this file.
 
+## 0.1.2
+
+- Lowered the Roslyn dependency baseline from `Microsoft.CodeAnalysis.CSharp` `5.6.0` to `4.8.0` so the analyzer can load in older .NET 8 development environments.
+
 ## 0.1.1
 
 - Fixed the NuGet symbol package layout by placing the analyzer DLL under `analyzers/dotnet/cs/netstandard2.0/`, matching the `.snupkg` PDB path required by nuget.org validation.

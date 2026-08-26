@@ -23,7 +23,7 @@ Unsupported or unclaimed cases:
 - non-SDK-style or customized builds that do not import NuGet `buildTransitive` assets;
 - consumers using a compiler older than the Roslyn API version referenced by the analyzer package.
 
-The package currently references Roslyn `5.6.0` so it can load in the .NET SDK compiler used by the integration tests.
+The package currently references Roslyn `4.8.0` so it can load in older .NET 8 development environments.
 
 ## Deferred Analysis
 

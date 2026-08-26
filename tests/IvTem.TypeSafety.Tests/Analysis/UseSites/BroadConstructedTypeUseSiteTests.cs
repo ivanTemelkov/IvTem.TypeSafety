@@ -223,9 +223,9 @@ internal sealed class Consumer
     }
 
     [Fact]
-    public void CollectionExpressionReportsOperationUseWhenTargetTypeIsRestricted()
+    public void CollectionExpressionReportsExplicitTargetTypeOnly()
     {
-        const string collectionExpression = "[]";
+        const string explicitTypeArgument = "System.InvalidOperationException";
         var source = """
 using System.Collections;
 using System.Collections.Generic;
@@ -261,8 +261,8 @@ internal sealed class Consumer
             .Where(diagnostic => diagnostic.Id == "IVTS001")
             .ToArray();
 
-        Assert.Equal(2, diagnostics.Length);
-        Assert.Contains(diagnostics, diagnostic => GetSourceText(source, diagnostic).Equals(collectionExpression, StringComparison.Ordinal));
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(explicitTypeArgument, GetSourceText(source, diagnostic));
     }
 
     [Fact]

@@ -51,8 +51,7 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
             compilationStartContext.RegisterOperationAction(
                 operationContext => AnalyzeConstructedTypeOperation(operationContext, constructedTypeUseValidator),
                 OperationKind.ObjectCreation,
-                OperationKind.TypeOf,
-                OperationKind.CollectionExpression);
+                OperationKind.TypeOf);
 
             compilationStartContext.RegisterOperationAction(
                 operationContext => AnalyzeMethodUse(operationContext, constructedTypeUseValidator),
@@ -164,7 +163,6 @@ public sealed class TypeSafetyAnalyzer : DiagnosticAnalyzer
         {
             IObjectCreationOperation objectCreation => objectCreation.Type as INamedTypeSymbol,
             ITypeOfOperation typeOf => typeOf.TypeOperand as INamedTypeSymbol,
-            ICollectionExpressionOperation collectionExpression => collectionExpression.Type as INamedTypeSymbol,
             _ => null
         };
 
