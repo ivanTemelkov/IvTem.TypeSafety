@@ -67,4 +67,13 @@
 
 ## Approved decisions
 
-No implementation decisions have been approved yet.
+No implementation decisions have been formally approved yet.
+
+## Release stabilization notes
+
+### Task 17: v0.1.0 release candidate
+
+- Status: Implemented pending human release approval.
+- Decision: Treat the implemented diagnostic catalog `IVTS001` through `IVTS005` as the `0.1.0` shipped catalog, with `IVTS004` reserved but listed so future analyzer changes do not reuse the ID.
+- Decision: Keep the runnable sample in the solution but mark it non-packable so solution-level `dotnet pack -c Release` produces only the analyzer/source-generator package.
+- Decision: Do not add late behavior or performance rewrites during stabilization; document remaining unsupported scenarios and rely on the current compilation-start caches plus 108-test validation for the v0.1.0 release candidate.

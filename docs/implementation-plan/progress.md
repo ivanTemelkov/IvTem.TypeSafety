@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 16 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection.
-- Stop condition: Wait for explicit instruction before Task 17.
+- Phase: Task 17 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection; final v0.1.0 stabilization pass completed with release tracking, changelog, decisions, package shape, and full validation refreshed.
+- Stop condition: Task 17 is complete. Wait for explicit release, commit, or follow-up instruction.
 
 ## Validation performed
 
@@ -74,6 +74,21 @@
 - Task 16: Ran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
 - Task 16: Ran a local temporary .NET 8 SDK check with `global.json` selecting SDK `8.0.414`; `dotnet msbuild ... -getProperty:TargetFramework` returned `netstandard2.0` and analyzer project restore succeeded.
 - Task 16: Inspected `.github/workflows/ci.yml` for obvious YAML and command issues.
+- Task 17: Ran `dotnet restore IvTem.TypeSafety.slnx`; initial sandboxed run failed with `MSB4184` because access to `C:\Users\Ivan Temelkov\AppData\Local\Microsoft SDKs` was denied, then elevated restore succeeded.
+- Task 17: Ran `dotnet build IvTem.TypeSafety.slnx -c Release --no-restore`; a first parallel run collided with `dotnet test` and failed because `testhost` locked the analyzer DLL, then the serial rerun succeeded with 0 warnings and 0 errors.
+- Task 17: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build`; full Release test suite passed with 108 tests.
+- Task 17: Ran `dotnet pack src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -c Release --no-restore`; initial sandboxed run hit the local SDK metadata access issue, then elevated project pack succeeded.
+- Task 17: Ran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
+- Task 17: Ran `dotnet pack -c Release`; found that the solution-level pack attempted to package the runnable sample and failed with `NU5039` because inherited package metadata referenced `README.md`.
+- Task 17: Inspected diagnostic descriptors, README, diagnostics, architecture, limitations, package metadata, package contents, deferred-feature documentation, and analyzer startup/cache paths.
+- Task 17: After marking the sample non-packable, reran `dotnet restore IvTem.TypeSafety.slnx`; restore succeeded.
+- Task 17: Reran `dotnet build IvTem.TypeSafety.slnx -c Release --no-restore`; Release build succeeded with 0 warnings and 0 errors.
+- Task 17: Reran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build`; full Release test suite passed with 108 tests.
+- Task 17: Reran `dotnet pack -c Release`; solution-level Release pack succeeded and produced the analyzer package.
+- Task 17: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build --filter PackageContentTests`; package-content validation passed with 1 test.
+- Task 17: Reran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
+- Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.nupkg`; it contains `analyzers/dotnet/cs/IvTem.TypeSafety.dll`, `buildTransitive/IvTem.TypeSafety.props`, and `README.md`, with no `lib/` entries.
+- Task 17: Manually inspected `IvTem.TypeSafety.0.1.0.snupkg`; it contains `analyzers/dotnet/cs/netstandard2.0/IvTem.TypeSafety.pdb`, with no `lib/` entries.
 
 ## Work completed
 
@@ -149,6 +164,10 @@
 - Task 16: Added `.github/workflows/ci.yml` with pull request and `main` push triggers.
 - Task 16: Added a primary CI job that checks out full Git history, installs .NET 10 and .NET 8 SDKs, restores the solution, builds Release, runs Release tests, packs the analyzer package, builds the sample, and uploads package/test artifacts without publishing to NuGet.
 - Task 16: Added a secondary .NET 8 SDK compatibility job that pins SDK 8 in a temporary runner directory, verifies SDK selection, confirms the analyzer project target framework is `netstandard2.0`, and restores the analyzer project.
+- Task 17: Marked the runnable sample project as non-packable so solution-level Release packing produces only the analyzer/source-generator package.
+- Task 17: Moved the `0.1.0` diagnostic catalog from unshipped to shipped release tracking, preserving `IVTS004` as a reserved descriptor.
+- Task 17: Updated the changelog with broad use-site coverage and solution-level pack stabilization.
+- Task 17: Updated the decision log with release-candidate stabilization decisions.
 
 ## Decisions made during planning
 
@@ -270,11 +289,18 @@
 - Kept `dotnet pack` without `--no-build` because the package-content target depends on `Build`; `--no-build` fails with `NETSDK1085` for this analyzer package shape.
 - Limited the .NET 8 SDK job to target-framework inspection and restore. A full SDK 8 analyzer build currently fails with `CS9057` because the Roslyn analyzer-rule dependency requires a newer compiler than SDK 8 provides.
 
+## Decisions made during Task 17
+
+- Treated `IVTS001`, `IVTS002`, `IVTS003`, and `IVTS005` as the emitted `0.1.0` diagnostic set, while keeping `IVTS004` in the shipped catalog as a reserved non-emitted descriptor.
+- Kept the sample project in the solution but marked it non-packable, because the repository-level `dotnet pack -c Release` command should produce the analyzer package without trying to package runnable examples.
+- Did not add late analyzer behavior or a new performance benchmark during stabilization; the release candidate relies on the existing 108-test suite, compilation-start analyzer state, and documented unsupported scenarios.
+
 ## Unresolved issues
 
 - Whether `IVTS005` should remain enabled for all current-source malformed lookalike metadata or be narrowed after review.
 - Whether broad semantic use-site coverage should be implemented in one task set or staged after core use sites.
 - No current unresolved NuGet analyzer transitivity issue remains for the tested normal dependency-flow scenarios.
+- No synthetic performance benchmark exists yet; performance-sensitive propagation paths use per-compilation caches, but larger real-world solutions should be monitored after initial release.
 
 ## Deferred features from specification
 
@@ -299,3 +325,5 @@
 - Analyzer projects targeting `netstandard2.0` should avoid production positional records unless an `IsExternalInit` compatibility shim is intentionally added.
 - `System.Attribute` and `System.Type` are not represented by `SpecialType` enum values in Roslyn; metadata-name checks are needed for those shape validations.
 - Roslyn exposes `[DisallowTypes(null)]` as a null params array and `[DisallowTypes(typeof(string), null)]` as an array containing a null entry, so both cases can be diagnosed distinctly.
+- Running solution build and tests in parallel can lock shared analyzer outputs on Windows; Task 17 validation should be run serially for reliable release evidence.
+- Sample projects that inherit repository package metadata should explicitly set `<IsPackable>false</IsPackable>` when they are included in the solution.
