@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-pack:
+    name: Build, test, pack, and sample
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            8.0.x
+
+      - name: Restore
+        run: dotnet restore IvTem.TypeSafety.slnx
+
+      - name: Build
+        run: dotnet build IvTem.TypeSafety.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test IvTem.TypeSafety.slnx -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Pack
+        run: dotnet pack src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -c Release --no-restore
+
+      - name: Build sample
+        run: dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            src/IvTem.TypeSafety/bin/Release/*.nupkg
+            src/IvTem.TypeSafety/bin/Release/*.snupkg
+          if-no-files-found: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/**/TestResults/*.trx
+          if-no-files-found: ignore
+
+  dotnet-8-compatibility:
+    name: .NET 8 SDK analyzer compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Create SDK pin for compatibility check
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir ivtem-typesafety-dotnet8
+          cat > ivtem-typesafety-dotnet8/global.json <<'JSON'
+          {
+            "sdk": {
+              "version": "8.0.100",
+              "rollForward": "latestFeature"
+            }
+          }
+          JSON
+
+      - name: Verify .NET 8 SDK selection
+        working-directory: ${{ runner.temp }}/ivtem-typesafety-dotnet8
+        run: dotnet --version
+
+      - name: Inspect analyzer target framework
+        working-directory: ${{ runner.temp }}/ivtem-typesafety-dotnet8
+        run: |
+          target_framework="$(dotnet msbuild "${{ github.workspace }}/src/IvTem.TypeSafety/IvTem.TypeSafety.csproj" -getProperty:TargetFramework)"
+          test "$target_framework" = "netstandard2.0"
+
+      - name: Restore analyzer with .NET 8 SDK
+        working-directory: ${{ runner.temp }}/ivtem-typesafety-dotnet8
+        run: dotnet restore ${{ github.workspace }}/src/IvTem.TypeSafety/IvTem.TypeSafety.csproj

@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Phase: Task 15 completed.
-- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added.
-- Stop condition: Wait for explicit instruction before Task 16.
+- Phase: Task 16 completed.
+- Implementation status: Repository scaffolding created; embedded attribute generator implemented and tested; diagnostic catalog and direct policy extraction implemented and tested; exact direct constructed-type matching implemented and tested; assignable direct constructed-type matching implemented and tested; generic method invocation, inference, method-group, delegate conversion, and generic local-function use sites implemented and tested; broad constructed generic type use sites implemented and tested; override and interface member contract propagation implemented and tested; generic type inheritance and interface propagation implemented and tested; signature-based named type propagation implemented and tested; cyclic generic-signature propagation detection implemented and tested; cross-assembly metadata enforcement implemented and tested; analyzer-only NuGet package layout implemented and package-content validation automated; NuGet/MSBuild direct, project-reference, and package-transitive enforcement proved by integration tests; user-facing documentation and runnable sample added; GitHub Actions-compatible CI added for restore, Release build, tests, package creation, package artifact upload, sample build, and limited .NET 8 SDK compatibility inspection.
+- Stop condition: Wait for explicit instruction before Task 17.
 
 ## Validation performed
 
@@ -67,6 +67,13 @@
 - Task 15: Ran `dotnet test IvTem.TypeSafety.slnx --filter "FullyQualifiedName~DirectRestrictionPolicyExtractionTests|FullyQualifiedName~CycleDetectionTests"`; docs-sensitive diagnostic tests passed.
 - Task 15: Ran `dotnet test IvTem.TypeSafety.slnx --no-build`; full test suite passed with 108 tests.
 - Task 15: Ran manual path checks for README documentation links and sample references.
+- Task 16: Ran `dotnet restore IvTem.TypeSafety.slnx`; restore succeeded after elevated access to local SDK metadata under the user profile.
+- Task 16: Ran `dotnet build IvTem.TypeSafety.slnx -c Release --no-restore`; Release build succeeded with 0 warnings and 0 errors.
+- Task 16: Ran `dotnet test IvTem.TypeSafety.slnx -c Release --no-build`; full Release test suite passed with 108 tests.
+- Task 16: Ran `dotnet pack src/IvTem.TypeSafety/IvTem.TypeSafety.csproj -c Release --no-restore`; package creation succeeded after elevated access to local SDK metadata under the user profile.
+- Task 16: Ran `dotnet build samples/IvTem.TypeSafety.Sample/IvTem.TypeSafety.Sample.csproj -c Release --no-restore`; sample Release build succeeded with 0 warnings and 0 errors.
+- Task 16: Ran a local temporary .NET 8 SDK check with `global.json` selecting SDK `8.0.414`; `dotnet msbuild ... -getProperty:TargetFramework` returned `netstandard2.0` and analyzer project restore succeeded.
+- Task 16: Inspected `.github/workflows/ci.yml` for obvious YAML and command issues.
 
 ## Work completed
 
@@ -139,6 +146,9 @@
 - Task 15: Expanded limitations documentation with deferred analysis, configuration boundaries, cycle handling, and analyzer activation limits.
 - Task 15: Added `samples/IvTem.TypeSafety.Sample` with valid usage for both attributes and intentionally invalid examples in a non-compiled `.cs.txt` file.
 - Task 15: Added the sample project to `IvTem.TypeSafety.slnx`.
+- Task 16: Added `.github/workflows/ci.yml` with pull request and `main` push triggers.
+- Task 16: Added a primary CI job that checks out full Git history, installs .NET 10 and .NET 8 SDKs, restores the solution, builds Release, runs Release tests, packs the analyzer package, builds the sample, and uploads package/test artifacts without publishing to NuGet.
+- Task 16: Added a secondary .NET 8 SDK compatibility job that pins SDK 8 in a temporary runner directory, verifies SDK selection, confirms the analyzer project target framework is `netstandard2.0`, and restores the analyzer project.
 
 ## Decisions made during planning
 
@@ -252,6 +262,13 @@
 - Documented `IVTS004` as reserved because the descriptor exists but no current analyzer path emits it.
 - Kept invalid sample examples in `InvalidExamples.cs.txt` so the sample remains runnable and CI-safe.
 - Referenced the local analyzer project as an analyzer in the sample rather than consuming a packed local NuGet package, keeping sample validation independent from Release pack output.
+
+## Decisions made during Task 16
+
+- Did not add `global.json` to the repository; CI installs explicit SDK channels while local checkouts remain free to use the installed .NET 10 SDK selected by normal roll-forward behavior.
+- Used a single primary CI job for restore, build, tests, package creation, package artifact upload, and sample build because the current suite already serializes package-build tests where needed.
+- Kept `dotnet pack` without `--no-build` because the package-content target depends on `Build`; `--no-build` fails with `NETSDK1085` for this analyzer package shape.
+- Limited the .NET 8 SDK job to target-framework inspection and restore. A full SDK 8 analyzer build currently fails with `CS9057` because the Roslyn analyzer-rule dependency requires a newer compiler than SDK 8 provides.
 
 ## Unresolved issues
 
